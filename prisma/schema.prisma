@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+// ============================================================
+// prisma/schema.prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // bcrypt hash — never store plaintext
+  name          String?
+  role          Role      @default(ADMIN)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+}
+
+// ─────────────────────────────────────────────
+// Catalogue
+// ─────────────────────────────────────────────
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  products    Product[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String?
+  price       Int         // stored in cents (e.g. 2999 = $29.99)
+  compareAt   Int?        // original price for "sale" display
+  stock       Int         @default(0)
+  images      String[]    // array of URLs
+  published   Boolean     @default(false)
+  featured    Boolean     @default(false)
+
+  categoryId  String?
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([published])
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────
+// Orders
+// ─────────────────────────────────────────────
+
+model Order {
+  id                String      @id @default(cuid())
+  status            OrderStatus @default(PENDING)
+
+  // Stripe references
+  stripeSessionId   String?     @unique
+  stripePaymentIntent String?   @unique
+
+  // Totals (cents)
+  subtotal          Int
+  shippingCost      Int         @default(0)
+  tax               Int         @default(0)
+  total             Int
+
+  // Customer snapshot (denormalised — no customer accounts yet)
+  customerEmail     String
+  customerName      String?
+  shippingAddress   Json?       // { line1, line2, city, state, postal_code, country }
+
+  items             OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([status])
+  @@index([customerEmail])
+  @@index([stripeSessionId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  quantity    Int
+  unitPrice   Int      // price at time of purchase (cents)
+  total       Int      // quantity × unitPrice
+
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  // Snapshot of product at purchase time (guards against future edits)
+  productName String
+  productSlug String
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+enum OrderStatus {
+  PENDING      // awaiting payment
+  PAID         // Stripe webhook confirmed
+  PROCESSING   // being packed
+  SHIPPED      // in transit
+  DELIVERED    // fulfilled
+  CANCELLED    // cancelled before shipment
+  REFUNDED     // refund issued
+}
