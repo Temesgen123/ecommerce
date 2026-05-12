@@ -12,10 +12,7 @@ import {
 } from 'lucide-react';
 
 interface AdminSidebarProps {
-  user: {
-    name?: string | null;
-    email?: string | null;
-  };
+  user: { name?: string | null; email?: string | null };
 }
 
 const navItems = [
@@ -29,11 +26,29 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-56 flex-shrink-0 flex-col border-r border-gray-200 bg-white">
+    <aside
+      className="flex h-screen w-56 flex-shrink-0 flex-col"
+      style={{
+        background: 'var(--bg-surface)',
+        borderRight: '1px solid var(--border-subtle)',
+      }}
+    >
       {/* Logo */}
-      <div className="flex h-16 items-center border-b border-gray-200 px-5">
-        <span className="text-base font-semibold tracking-tight text-gray-900">
-          Admin Panel
+      <div
+        className="flex h-16 items-center px-5"
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+      >
+        <span
+          className="text-base font-bold"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          My<span style={{ color: 'var(--accent)' }}>Store</span>
+          <span
+            className="ml-2 text-xs font-normal"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Admin
+          </span>
         </span>
       </div>
 
@@ -49,11 +64,16 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all"
+              style={
                 isActive
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+                  ? {
+                      background: 'var(--accent-subtle)',
+                      color: 'var(--accent-light)',
+                      borderLeft: '2px solid var(--accent)',
+                    }
+                  : { color: 'var(--text-secondary)' }
+              }
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
               {label}
@@ -63,16 +83,38 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       </nav>
 
       {/* User + sign out */}
-      <div className="border-t border-gray-200 p-3">
+      <div
+        className="p-3"
+        style={{ borderTop: '1px solid var(--border-subtle)' }}
+      >
         <div className="mb-2 px-3 py-1">
-          <p className="truncate text-xs font-medium text-gray-900">
+          <p
+            className="truncate text-xs font-medium"
+            style={{ color: 'var(--text-primary)' }}
+          >
             {user.name ?? 'Admin'}
           </p>
-          <p className="truncate text-xs text-gray-500">{user.email}</p>
+          <p
+            className="truncate text-xs"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {user.email}
+          </p>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: '/admin/login' })}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background =
+              'var(--error-bg)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--error-text)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'transparent';
+            (e.currentTarget as HTMLElement).style.color =
+              'var(--text-secondary)';
+          }}
         >
           <LogOut className="h-4 w-4 flex-shrink-0" />
           Sign out
