@@ -32,10 +32,9 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      {/* Header */}
       <div className="mb-8">
         <h1
-          className="text-2xl font-semibold"
+          className="text-2xl font-bold"
           style={{ color: 'var(--text-primary)' }}
         >
           {activeCategory ? activeCategory.name : 'All Products'}
@@ -46,11 +45,10 @@ export default async function ProductsPage({ searchParams }: Props) {
       </div>
 
       <div className="flex flex-col gap-8 sm:flex-row">
-        {/* Sidebar filters */}
         {categories.length > 0 && (
-          <aside className="w-full sm:w-44 flex-shrink-0">
+          <aside className="w-full sm:w-48 flex-shrink-0">
             <p
-              className="mb-3 text-xs font-semibold uppercase tracking-widest"
+              className="mb-3 text-xs font-bold uppercase tracking-widest"
               style={{ color: 'var(--text-muted)' }}
             >
               Category
@@ -59,27 +57,27 @@ export default async function ProductsPage({ searchParams }: Props) {
               <li>
                 <Link
                   href="/products"
-                  className="block rounded-lg px-3 py-1.5 text-sm font-medium transition-all"
+                  className="block rounded-lg px-3 py-2 text-sm font-medium transition-colors"
                   style={
                     !category
-                      ? { background: 'var(--accent)', color: '#fff' }
+                      ? { background: 'var(--navy-900)', color: '#fff' }
                       : { color: 'var(--text-secondary)' }
                   }
                 >
-                  All
+                  All Products
                 </Link>
               </li>
               {categories.map((cat) => (
                 <li key={cat.id}>
                   <Link
                     href={`/products?category=${cat.slug}`}
-                    className="block rounded-lg px-3 py-1.5 text-sm transition-all"
+                    className="block rounded-lg px-3 py-2 text-sm transition-colors"
                     style={
                       category === cat.slug
                         ? {
-                            background: 'var(--accent)',
+                            background: 'var(--navy-900)',
                             color: '#fff',
-                            fontWeight: 500,
+                            fontWeight: 600,
                           }
                         : { color: 'var(--text-secondary)' }
                     }
@@ -95,7 +93,6 @@ export default async function ProductsPage({ searchParams }: Props) {
           </aside>
         )}
 
-        {/* Grid */}
         <div className="flex-1">
           {products.length === 0 ? (
             <div
@@ -105,8 +102,8 @@ export default async function ProductsPage({ searchParams }: Props) {
               No products found.{' '}
               <Link
                 href="/products"
-                className="underline"
-                style={{ color: 'var(--accent-light)' }}
+                className="font-semibold underline"
+                style={{ color: 'var(--navy-700)' }}
               >
                 Clear filters
               </Link>

@@ -33,93 +33,95 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center px-4"
-      style={{ background: 'var(--bg-base)' }}
-    >
-      {/* Background glow */}
+    <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      {/* Left panel — navy brand */}
       <div
-        className="pointer-events-none fixed left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full opacity-10 blur-3xl"
-        style={{ background: 'var(--accent)' }}
-      />
-
-      <div
-        className="relative w-full max-w-sm rounded-2xl p-8"
-        style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-base)',
-          boxShadow: '0 24px 64px rgba(2,11,24,0.6)',
-        }}
+        className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12"
+        style={{ background: 'var(--navy-900)' }}
       >
-        {/* Logo */}
-        <div className="mb-8 text-center">
+        <p className="text-4xl font-extrabold text-white">
+          My<span style={{ color: 'var(--accent)' }}>Store</span>
+        </p>
+        <p className="mt-3 text-base" style={{ color: 'var(--navy-100)' }}>
+          Admin Panel — Manage your store
+        </p>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="flex flex-1 items-center justify-center px-6 py-12">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
           <p
-            className="text-2xl font-bold"
-            style={{ color: 'var(--text-primary)' }}
+            className="mb-8 text-center text-2xl font-extrabold lg:hidden"
+            style={{ color: 'var(--navy-900)' }}
           >
             My<span style={{ color: 'var(--accent)' }}>Store</span>
           </p>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Sign in to your admin panel
-          </p>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div
-              className="rounded-lg px-4 py-3 text-sm"
-              style={{
-                background: 'var(--error-bg)',
-                color: 'var(--error-text)',
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <label
-              className="text-xs font-medium"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
-              className="input-theme w-full px-4 py-2.5 text-sm"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label
-              className="text-xs font-medium"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-theme w-full px-4 py-2.5 text-sm"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full py-2.5 text-sm font-semibold mt-2 disabled:opacity-50"
+          <h2
+            className="text-2xl font-bold mb-1"
+            style={{ color: 'var(--text-primary)' }}
           >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
+            Sign in
+          </h2>
+          <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>
+            Enter your admin credentials to continue.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div
+                className="rounded-lg px-4 py-3 text-sm font-medium"
+                style={{
+                  background: 'var(--error-bg)',
+                  color: 'var(--error-text)',
+                }}
+              >
+                {error}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Email
+              </label>
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="input-theme w-full px-4 py-2.5 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Password
+              </label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-theme w-full px-4 py-2.5 text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-navy w-full py-2.5 text-sm disabled:opacity-50 mt-2"
+            >
+              {loading ? 'Signing in…' : 'Sign in →'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

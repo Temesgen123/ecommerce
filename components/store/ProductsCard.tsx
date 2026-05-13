@@ -33,10 +33,7 @@ export default function ProductCard({
   const addItem = useCartStore((s) => s.addItem);
 
   return (
-    <div
-      className="card group relative flex flex-col overflow-hidden transition-all duration-200"
-      style={{ background: 'var(--bg-surface)' }}
-    >
+    <div className="card group relative flex flex-col overflow-hidden">
       {/* Image */}
       <Link
         href={`/products/${slug}`}
@@ -59,29 +56,27 @@ export default function ProductCard({
         )}
       </Link>
 
-      {/* Sale badge */}
       {compareAt && compareAt > price && (
         <span
-          className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-xs font-semibold"
+          className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-xs font-bold"
           style={{ background: 'var(--error-bg)', color: 'var(--error-text)' }}
         >
           Sale
         </span>
       )}
 
-      {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
         {category && (
           <p
-            className="text-xs uppercase tracking-widest"
-            style={{ color: 'var(--text-muted)' }}
+            className="text-xs uppercase tracking-widest font-medium"
+            style={{ color: 'var(--navy-600)' }}
           >
             {category}
           </p>
         )}
         <Link
           href={`/products/${slug}`}
-          className="text-sm font-medium leading-snug line-clamp-2 hover:underline"
+          className="text-sm font-semibold leading-snug line-clamp-2 hover:underline"
           style={{ color: 'var(--text-primary)' }}
         >
           {name}
@@ -89,8 +84,8 @@ export default function ProductCard({
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
           <div className="flex items-baseline gap-1.5">
             <span
-              className="text-sm font-semibold"
-              style={{ color: 'var(--accent-light)' }}
+              className="text-base font-bold"
+              style={{ color: 'var(--text-primary)' }}
             >
               {formatPrice(price)}
             </span>
@@ -107,9 +102,9 @@ export default function ProductCard({
             onClick={() =>
               addItem({ id, name, slug, price, image: image ?? null })
             }
-            className="btn-primary rounded-lg px-3 py-1.5 text-xs font-medium"
+            className="btn-primary rounded-lg px-3 py-1.5 text-xs"
           >
-            Add
+            Add to cart
           </button>
         </div>
       </div>

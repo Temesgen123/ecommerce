@@ -35,7 +35,7 @@ export default function AddToCartButton({ product }: Props) {
     return (
       <button
         disabled
-        className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium cursor-not-allowed"
+        className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold cursor-not-allowed"
         style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
       >
         Out of Stock
@@ -46,20 +46,16 @@ export default function AddToCartButton({ product }: Props) {
   return (
     <button
       onClick={handleAdd}
-      className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold transition-all duration-200"
+      className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-bold transition-all duration-200"
       style={
         added
-          ? {
-              background: 'var(--success-bg)',
-              color: 'var(--success-text)',
-              border: '1px solid rgba(16,185,129,0.3)',
-            }
+          ? { background: 'var(--success-bg)', color: 'var(--success-text)' }
           : { background: 'var(--accent)', color: '#fff' }
       }
     >
       {added ? (
         <>
-          <Check className="h-4 w-4" /> Added to Cart
+          <Check className="h-4 w-4" /> Added!
         </>
       ) : (
         <>

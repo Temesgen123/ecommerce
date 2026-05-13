@@ -25,22 +25,11 @@ export default function CartDrawer() {
   return (
     <>
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40 backdrop-blur-sm"
-          style={{ background: 'rgba(2, 11, 24, 0.7)' }}
-          onClick={closeCart}
-        />
+        <div className="fixed inset-0 z-40 bg-black/40" onClick={closeCart} />
       )}
 
       <div
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        style={{
-          background: 'var(--bg-surface)',
-          borderLeft: '1px solid var(--border-base)',
-          boxShadow: '-8px 0 32px rgba(2, 11, 24, 0.6)',
-        }}
+        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Header */}
         <div
@@ -57,25 +46,14 @@ export default function CartDrawer() {
                 className="text-sm font-normal"
                 style={{ color: 'var(--text-muted)' }}
               >
-                ({items.length} item{items.length !== 1 ? 's' : ''})
+                ({items.length})
               </span>
             )}
           </h2>
           <button
             onClick={closeCart}
-            className="rounded-lg p-1.5 transition-colors"
+            className="rounded-lg p-1.5 transition-colors hover:bg-gray-100"
             style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                'var(--bg-elevated)';
-              (e.currentTarget as HTMLElement).style.color =
-                'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = 'transparent';
-              (e.currentTarget as HTMLElement).style.color =
-                'var(--text-muted)';
-            }}
           >
             <X className="h-5 w-5" />
           </button>
@@ -88,26 +66,25 @@ export default function CartDrawer() {
               className="flex flex-col items-center justify-center gap-3 py-20"
               style={{ color: 'var(--text-muted)' }}
             >
-              <ShoppingBag className="h-10 w-10 opacity-40" />
+              <ShoppingBag className="h-12 w-12 opacity-30" />
               <p className="text-sm">Your cart is empty.</p>
               <button
                 onClick={closeCart}
-                className="text-sm font-medium underline underline-offset-2 transition-colors"
-                style={{ color: 'var(--accent-light)' }}
+                className="text-sm font-semibold underline underline-offset-2"
+                style={{ color: 'var(--navy-900)' }}
               >
                 Continue shopping
               </button>
             </div>
           ) : (
-            <ul className="space-y-1">
+            <ul
+              className="divide-y"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
               {items.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex gap-4 py-4"
-                  style={{ borderBottom: '1px solid var(--border-subtle)' }}
-                >
+                <li key={item.id} className="flex gap-4 py-4">
                   <div
-                    className="h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden"
+                    className="h-18 w-16 flex-shrink-0 rounded-lg overflow-hidden"
                     style={{ background: 'var(--bg-elevated)' }}
                   >
                     {item.image ? (
@@ -125,7 +102,6 @@ export default function CartDrawer() {
                       </div>
                     )}
                   </div>
-
                   <div className="flex flex-1 flex-col gap-1">
                     <div className="flex items-start justify-between gap-2">
                       <Link
@@ -138,69 +114,49 @@ export default function CartDrawer() {
                       </Link>
                       <button
                         onClick={() => removeItem(item.id)}
-                        className="transition-colors flex-shrink-0"
+                        className="transition-colors flex-shrink-0 hover:text-red-500"
                         style={{ color: 'var(--text-muted)' }}
-                        onMouseEnter={(e) =>
-                          ((e.currentTarget as HTMLElement).style.color =
-                            'var(--error-text)')
-                        }
-                        onMouseLeave={(e) =>
-                          ((e.currentTarget as HTMLElement).style.color =
-                            'var(--text-muted)')
-                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                     <p
-                      className="text-sm"
-                      style={{ color: 'var(--text-secondary)' }}
+                      className="text-sm font-semibold"
+                      style={{ color: 'var(--accent)' }}
                     >
                       {formatPrice(item.price)}
                     </p>
                     <div className="mt-1 flex items-center gap-2">
-                      {[
-                        {
-                          icon: Minus,
-                          action: () =>
-                            updateQuantity(item.id, item.quantity - 1),
-                        },
-                        {
-                          icon: Plus,
-                          action: () =>
-                            updateQuantity(item.id, item.quantity + 1),
-                        },
-                      ].map(({ icon: Icon, action }, i) => (
-                        <button
-                          key={i}
-                          onClick={
-                            i === 0
-                              ? () => updateQuantity(item.id, item.quantity - 1)
-                              : () => updateQuantity(item.id, item.quantity + 1)
-                          }
-                          className="rounded p-0.5 transition-colors"
-                          style={{
-                            border: '1px solid var(--border-base)',
-                            color: 'var(--text-secondary)',
-                          }}
-                          onMouseEnter={(e) =>
-                            ((e.currentTarget as HTMLElement).style.background =
-                              'var(--bg-overlay)')
-                          }
-                          onMouseLeave={(e) =>
-                            ((e.currentTarget as HTMLElement).style.background =
-                              'transparent')
-                          }
-                        >
-                          <Icon className="h-3 w-3" />
-                        </button>
-                      ))}
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity - 1)
+                        }
+                        className="rounded border p-0.5 transition-colors hover:bg-gray-100"
+                        style={{
+                          borderColor: 'var(--border-base)',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
                       <span
-                        className="w-6 text-center text-sm tabular-nums"
+                        className="w-6 text-center text-sm font-medium tabular-nums"
                         style={{ color: 'var(--text-primary)' }}
                       >
                         {item.quantity}
                       </span>
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity + 1)
+                        }
+                        className="rounded border p-0.5 transition-colors hover:bg-gray-100"
+                        style={{
+                          borderColor: 'var(--border-base)',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
                 </li>
@@ -212,13 +168,21 @@ export default function CartDrawer() {
         {/* Footer */}
         {items.length > 0 && (
           <div
-            className="px-5 py-4 space-y-4"
-            style={{ borderTop: '1px solid var(--border-subtle)' }}
+            className="px-5 py-5 space-y-4"
+            style={{
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-base)',
+            }}
           >
-            <div className="flex items-center justify-between text-sm">
-              <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
+            <div className="flex items-center justify-between">
               <span
-                className="font-semibold"
+                className="text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Subtotal
+              </span>
+              <span
+                className="text-lg font-bold"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {formatPrice(totalPrice())}
@@ -229,9 +193,9 @@ export default function CartDrawer() {
             </p>
             <button
               onClick={handleCheckout}
-              className="btn-primary w-full py-3 text-sm font-medium"
+              className="btn-primary w-full py-3 text-sm"
             >
-              Checkout
+              Checkout →
             </button>
           </div>
         )}

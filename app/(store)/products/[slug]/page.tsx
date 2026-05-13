@@ -16,20 +16,17 @@ function formatPrice(cents: number) {
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const product = await prisma.product.findUnique({ where: { slug } });
-  if (!product) return {};
-  return { title: product.name };
+  return product ? { title: product.name } : {};
 }
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-
   const product = await prisma.product.findUnique({
     where: { slug, published: true },
     include: { category: { select: { name: true, slug: true } } },
   });
 
   if (!product) notFound();
-
   const image = product.images[0] ?? null;
 
   return (
@@ -73,44 +70,43 @@ export default async function ProductDetailPage({ params }: Props) {
           {product.category && (
             <a
               href={`/products?category=${product.category.slug}`}
-              className="text-xs font-semibold uppercase tracking-widest transition-colors"
-              style={{ color: 'var(--accent-light)' }}
+              className="text-xs font-bold uppercase tracking-widest transition-colors"
+              style={{ color: 'var(--navy-600)' }}
             >
               {product.category.name}
             </a>
           )}
 
           <h1
-            className="text-3xl font-bold tracking-tight"
+            className="text-3xl font-extrabold tracking-tight"
             style={{ color: 'var(--text-primary)' }}
           >
             {product.name}
           </h1>
 
-          {/* Price */}
           <div className="flex items-baseline gap-3">
             <span
-              className="text-2xl font-semibold"
-              style={{ color: 'var(--accent-light)' }}
+              className="text-3xl font-bold"
+              style={{ color: 'var(--accent)' }}
             >
               {formatPrice(product.price)}
             </span>
             {product.compareAt && product.compareAt > product.price && (
               <>
                 <span
-                  className="text-base line-through"
+                  className="text-lg line-through"
                   style={{ color: 'var(--text-muted)' }}
                 >
                   {formatPrice(product.compareAt)}
                 </span>
                 <span
-                  className="rounded-full px-2 py-0.5 text-xs font-medium"
+                  className="rounded-full px-2.5 py-0.5 text-xs font-bold"
                   style={{
                     background: 'var(--error-bg)',
                     color: 'var(--error-text)',
                   }}
                 >
-                  Sale
+                  SALE
                 </span>
               </>
             )}
@@ -125,14 +121,13 @@ export default async function ProductDetailPage({ params }: Props) {
             </p>
           )}
 
-          {/* Stock */}
-          <p className="text-xs">
+          <p className="text-sm font-medium">
             {product.stock > 0 ? (
               <span style={{ color: 'var(--success-text)' }}>
                 ✓ In stock ({product.stock} available)
               </span>
             ) : (
-              <span style={{ color: 'var(--error-text)' }}>Out of stock</span>
+              <span style={{ color: 'var(--error-text)' }}>✕ Out of stock</span>
             )}
           </p>
 

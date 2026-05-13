@@ -1,54 +1,51 @@
 @import 'tailwindcss';
 
 /* ============================================================
-   Navy Blue Theme — CSS Variables
+   Light + Navy E-commerce Theme
+   Light backgrounds let products shine; navy navbar for brand.
    ============================================================ */
 :root {
-  /* Core palette — true navy, not pitch black */
-  --navy-950: #0a1628;
-  --navy-900: #0f1e38;
-  --navy-800: #162847;
-  --navy-700: #1e3560;
-  --navy-600: #274478;
-  --navy-500: #2e5190;
-  --navy-400: #3b6ab0;
-  --navy-300: #5b8ec8;
-  --navy-200: #89b4dc;
-  --navy-100: #bdd4ee;
-  --navy-50: #e6eff8;
+  /* Navy — used for navbar, headings, admin chrome */
+  --navy-900: #1e3a5f;
+  --navy-800: #234876;
+  --navy-700: #2a5690;
+  --navy-600: #3164a8;
+  --navy-500: #3b74c0;
+  --navy-100: #ddeaf9;
+  --navy-50: #eef5fc;
 
-  /* Accent — bright sky blue */
-  --accent: #4d9fec;
-  --accent-hover: #3b8fdc;
-  --accent-light: #a8cffa;
-  --accent-subtle: #1e3560;
+  /* Accent — orange, high-contrast CTA */
+  --accent: #f97316;
+  --accent-hover: #ea6a0a;
+  --accent-light: #fed7aa;
+  --accent-subtle: #fff7ed;
 
-  /* Surfaces */
-  --bg-base: var(--navy-900);
-  --bg-surface: var(--navy-800);
-  --bg-elevated: var(--navy-700);
-  --bg-overlay: var(--navy-600);
+  /* Surfaces — light */
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-overlay: #e2e8f0;
 
   /* Borders */
-  --border-subtle: rgba(77, 159, 236, 0.15);
-  --border-base: rgba(77, 159, 236, 0.25);
-  --border-strong: rgba(77, 159, 236, 0.45);
+  --border-subtle: #e2e8f0;
+  --border-base: #cbd5e1;
+  --border-strong: #94a3b8;
 
   /* Text */
-  --text-primary: #eef4ff;
-  --text-secondary: #a0bce0;
-  --text-muted: #6888aa;
-  --text-inverse: #0a1628;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
 
-  /* Status colours */
-  --success-bg: rgba(16, 185, 129, 0.18);
-  --success-text: #6ee7b7;
-  --warning-bg: rgba(245, 158, 11, 0.18);
-  --warning-text: #fcd34d;
-  --error-bg: rgba(239, 68, 68, 0.18);
-  --error-text: #fca5a5;
-  --info-bg: rgba(77, 159, 236, 0.18);
-  --info-text: #a8cffa;
+  /* Status */
+  --success-bg: #dcfce7;
+  --success-text: #15803d;
+  --warning-bg: #fef9c3;
+  --warning-text: #a16207;
+  --error-bg: #fee2e2;
+  --error-text: #dc2626;
+  --info-bg: #dbeafe;
+  --info-text: #1d4ed8;
 }
 
 /* ── Base ──────────────────────────────────────────────────── */
@@ -57,7 +54,6 @@
 *::after {
   box-sizing: border-box;
 }
-
 html {
   scroll-behavior: smooth;
 }
@@ -65,7 +61,7 @@ html {
 body {
   background-color: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -76,91 +72,77 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--navy-900);
+  background: var(--bg-elevated);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--navy-600);
+  background: var(--border-strong);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--navy-500);
+  background: var(--navy-700);
 }
 
 /* ── Selection ─────────────────────────────────────────────── */
 ::selection {
-  background: var(--accent);
+  background: var(--navy-500);
   color: #fff;
 }
 
-/* ── Focus ring ────────────────────────────────────────────── */
+/* ── Focus ring ─────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--navy-500);
   outline-offset: 2px;
 }
 
-/* ── Utility classes (used across components) ──────────────── */
-
-/* Surfaces */
-.surface {
-  background: var(--bg-surface);
-}
-.surface-raised {
-  background: var(--bg-elevated);
-}
-
-/* Borders */
-.border-theme {
-  border-color: var(--border-base);
-}
-.border-theme-subtle {
-  border-color: var(--border-subtle);
-}
-
-/* Glow effects */
-.glow-accent {
-  box-shadow:
-    0 0 20px rgba(59, 130, 246, 0.15),
-    0 0 40px rgba(59, 130, 246, 0.05);
-}
-
-.glow-accent-sm {
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
-}
-
-/* Card style */
+/* ── Card ──────────────────────────────────────────────────── */
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 0.75rem;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
-
 .card:hover {
   border-color: var(--border-base);
-  box-shadow:
-    0 4px 24px rgba(2, 11, 24, 0.4),
-    0 0 0 1px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
 }
 
-/* Button — primary */
+/* ── Buttons ───────────────────────────────────────────────── */
 .btn-primary {
   background: var(--accent);
   color: #fff;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 0.5rem;
   transition:
     background 0.15s,
-    box-shadow 0.15s,
-    transform 0.1s;
+    transform 0.1s,
+    box-shadow 0.15s;
 }
 .btn-primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
 }
 .btn-primary:active {
   transform: scale(0.98);
 }
 
-/* Button — ghost */
+.btn-navy {
+  background: var(--navy-900);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+}
+.btn-navy:hover {
+  background: var(--navy-800);
+}
+.btn-navy:active {
+  transform: scale(0.98);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
@@ -168,18 +150,16 @@ body {
   border-radius: 0.5rem;
   transition:
     background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+    color 0.15s;
 }
 .btn-ghost:hover {
   background: var(--bg-elevated);
   color: var(--text-primary);
-  border-color: var(--border-strong);
 }
 
-/* Input */
+/* ── Input ─────────────────────────────────────────────────── */
 .input-theme {
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   color: var(--text-primary);
   border-radius: 0.5rem;
@@ -191,12 +171,12 @@ body {
   color: var(--text-muted);
 }
 .input-theme:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--navy-500);
+  box-shadow: 0 0 0 3px rgba(59, 116, 192, 0.15);
   outline: none;
 }
 
-/* Badge */
+/* ── Badges ────────────────────────────────────────────────── */
 .badge-blue {
   background: var(--info-bg);
   color: var(--info-text);
@@ -214,14 +194,22 @@ body {
   color: var(--error-text);
 }
 .badge-gray {
-  background: rgba(90, 122, 156, 0.15);
+  background: var(--bg-elevated);
   color: var(--text-muted);
 }
 
-/* Divider */
+/* ── Divider ───────────────────────────────────────────────── */
 hr,
 .divider {
   border-color: var(--border-subtle);
+}
+
+/* ── Admin sidebar nav active ──────────────────────────────── */
+.admin-nav-active {
+  background: var(--navy-50);
+  color: var(--navy-900);
+  border-left: 2px solid var(--navy-700);
+  font-weight: 600;
 }
 
 /* ── Page transition ────────────────────────────────────────── */
@@ -236,5 +224,5 @@ hr,
   }
 }
 .animate-fade-up {
-  animation: fadeUp 0.35s ease both;
+  animation: fadeUp 0.3s ease both;
 }

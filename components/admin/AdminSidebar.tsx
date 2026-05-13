@@ -27,50 +27,42 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
 
   return (
     <aside
-      className="flex h-screen w-56 flex-shrink-0 flex-col"
-      style={{
-        background: 'var(--bg-surface)',
-        borderRight: '1px solid var(--border-subtle)',
-      }}
+      className="flex h-screen w-56 flex-shrink-0 flex-col bg-white"
+      style={{ borderRight: '1px solid var(--border-subtle)' }}
     >
       {/* Logo */}
       <div
         className="flex h-16 items-center px-5"
-        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+        style={{
+          background: 'var(--navy-900)',
+          borderBottom: '1px solid var(--navy-800)',
+        }}
       >
-        <span
-          className="text-base font-bold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <span className="text-base font-bold text-white">
           My<span style={{ color: 'var(--accent)' }}>Store</span>
-          <span
-            className="ml-2 text-xs font-normal"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            Admin
-          </span>
+          <span className="ml-2 text-xs font-normal opacity-60">Admin</span>
         </span>
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
         {navItems.map(({ label, href, icon: Icon }) => {
           const isActive =
             href === '/admin'
               ? pathname === '/admin'
               : pathname.startsWith(href);
-
           return (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all"
               style={
                 isActive
                   ? {
-                      background: 'var(--accent-subtle)',
-                      color: 'var(--accent-light)',
-                      borderLeft: '2px solid var(--accent)',
+                      background: 'var(--navy-50)',
+                      color: 'var(--navy-900)',
+                      borderLeft: '3px solid var(--navy-700)',
+                      paddingLeft: '9px',
                     }
                   : { color: 'var(--text-secondary)' }
               }
@@ -82,14 +74,17 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
         })}
       </nav>
 
-      {/* User + sign out */}
+      {/* User */}
       <div
         className="p-3"
         style={{ borderTop: '1px solid var(--border-subtle)' }}
       >
-        <div className="mb-2 px-3 py-1">
+        <div
+          className="mb-2 rounded-lg px-3 py-2"
+          style={{ background: 'var(--bg-elevated)' }}
+        >
           <p
-            className="truncate text-xs font-medium"
+            className="truncate text-xs font-semibold"
             style={{ color: 'var(--text-primary)' }}
           >
             {user.name ?? 'Admin'}
@@ -103,18 +98,15 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
         </div>
         <button
           onClick={() => signOut({ callbackUrl: '/admin/login' })}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-red-50"
           style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background =
-              'var(--error-bg)';
-            (e.currentTarget as HTMLElement).style.color = 'var(--error-text)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = 'transparent';
-            (e.currentTarget as HTMLElement).style.color =
-              'var(--text-secondary)';
-          }}
+          onMouseEnter={(e) =>
+            ((e.currentTarget as HTMLElement).style.color = 'var(--error-text)')
+          }
+          onMouseLeave={(e) =>
+            ((e.currentTarget as HTMLElement).style.color =
+              'var(--text-secondary)')
+          }
         >
           <LogOut className="h-4 w-4 flex-shrink-0" />
           Sign out
