@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react';
 import type { ProductFormState } from '@/app/actions/products';
 import type { Category } from '@prisma/client';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface ProductFormProps {
   action: (
@@ -14,12 +15,13 @@ interface ProductFormProps {
     name?: string;
     slug?: string;
     description?: string;
-    price?: number; // in cents
+    price?: number;
     compareAt?: number | null;
     stock?: number;
     categoryId?: string | null;
     published?: boolean;
     featured?: boolean;
+    images?: string[];
   };
   submitLabel?: string;
 }
@@ -54,27 +56,64 @@ export default function ProductForm({
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     !!defaultValues.slug,
   );
+  const [images, setImages] = useState<string[]>(defaultValues.images ?? []);
 
-  // Auto-generate slug from name unless user has manually edited it
   useEffect(() => {
-    if (!slugManuallyEdited) {
-      setSlug(slugify(name));
-    }
+    if (!slugManuallyEdited) setSlug(slugify(name));
   }, [name, slugManuallyEdited]);
 
   const err = state.errors ?? {};
 
+  // Wrap the action to inject image URLs into FormData
+  async function handleSubmit(formData: FormData) {
+    // Remove any stale image hidden fields from ImageUploader
+    // and replace with the current images state
+    images.forEach((url, i) => formData.set(`images[${i}]`, url));
+    return action(state, formData);
+  }
+
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} className="space-y-6">
       {state.message && (
-        <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div
+          className="rounded-lg px-4 py-3 text-sm font-medium"
+          style={{ background: 'var(--error-bg)', color: 'var(--error-text)' }}
+        >
           {state.message}
         </div>
       )}
 
+      {/* Images */}
+      <section
+        className="rounded-xl border bg-white p-6 space-y-4"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <h2
+          className="text-xs font-bold uppercase tracking-widest"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          Product Images
+        </h2>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          The first image will be used as the main product image.
+        </p>
+        <ImageUploader value={images} onChange={setImages} maxImages={5} />
+        {err.images && (
+          <p className="text-xs" style={{ color: 'var(--error-text)' }}>
+            {err.images[0]}
+          </p>
+        )}
+      </section>
+
       {/* Basic info */}
-      <section className="rounded-lg border border-gray-200 bg-white p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+      <section
+        className="rounded-xl border bg-white p-6 space-y-5"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <h2
+          className="text-xs font-bold uppercase tracking-widest"
+          style={{ color: 'var(--text-muted)' }}
+        >
           Basic Information
         </h2>
 
@@ -90,7 +129,7 @@ export default function ProductForm({
 
         <Field
           label="Slug"
-          hint="URL-friendly identifier"
+          hint="Auto-generated from name"
           error={err.slug?.[0]}
         >
           <input
@@ -117,14 +156,23 @@ export default function ProductForm({
       </section>
 
       {/* Pricing */}
-      <section className="rounded-lg border border-gray-200 bg-white p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+      <section
+        className="rounded-xl border bg-white p-6 space-y-5"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <h2
+          className="text-xs font-bold uppercase tracking-widest"
+          style={{ color: 'var(--text-muted)' }}
+        >
           Pricing
         </h2>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Price (USD)" error={err.price?.[0]}>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+              <span
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 $
               </span>
               <input
@@ -140,11 +188,14 @@ export default function ProductForm({
           </Field>
           <Field
             label="Compare-at Price"
-            hint="Show a strikethrough original price"
+            hint="Strikethrough original"
             error={err.compareAt?.[0]}
           >
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+              <span
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 $
               </span>
               <input
@@ -162,8 +213,14 @@ export default function ProductForm({
       </section>
 
       {/* Inventory */}
-      <section className="rounded-lg border border-gray-200 bg-white p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+      <section
+        className="rounded-xl border bg-white p-6 space-y-5"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <h2
+          className="text-xs font-bold uppercase tracking-widest"
+          style={{ color: 'var(--text-muted)' }}
+        >
           Inventory
         </h2>
         <div className="grid grid-cols-2 gap-4">
@@ -195,8 +252,14 @@ export default function ProductForm({
       </section>
 
       {/* Visibility */}
-      <section className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+      <section
+        className="rounded-xl border bg-white p-6 space-y-4"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <h2
+          className="text-xs font-bold uppercase tracking-widest"
+          style={{ color: 'var(--text-muted)' }}
+        >
           Visibility
         </h2>
         <label className="flex items-center gap-3 cursor-pointer">
@@ -204,37 +267,54 @@ export default function ProductForm({
             type="checkbox"
             name="published"
             defaultChecked={defaultValues.published ?? false}
-            className="h-4 w-4 rounded border-gray-300 text-gray-900"
+            className="h-4 w-4 rounded"
           />
-          <span className="text-sm text-gray-700">
-            Published — visible on the storefront
-          </span>
+          <div>
+            <p
+              className="text-sm font-medium"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Published
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Visible on the storefront
+            </p>
+          </div>
         </label>
         <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
             name="featured"
             defaultChecked={defaultValues.featured ?? false}
-            className="h-4 w-4 rounded border-gray-300 text-gray-900"
+            className="h-4 w-4 rounded"
           />
-          <span className="text-sm text-gray-700">
-            Featured — shown on the homepage
-          </span>
+          <div>
+            <p
+              className="text-sm font-medium"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Featured
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Shown on the homepage
+            </p>
+          </div>
         </label>
       </section>
 
       {/* Submit */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-50"
+          className="btn-navy rounded-lg px-6 py-2.5 text-sm disabled:opacity-50"
         >
           {isPending ? 'Saving…' : submitLabel}
         </button>
         <a
           href="/admin/products"
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-sm transition-colors"
+          style={{ color: 'var(--text-muted)' }}
         >
           Cancel
         </a>
@@ -243,7 +323,7 @@ export default function ProductForm({
   );
 }
 
-// ── Sub-components ───────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────
 function Field({
   label,
   hint,
@@ -256,19 +336,34 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-baseline justify-between">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
-        {hint && <span className="text-xs text-gray-400">{hint}</span>}
+        <label
+          className="text-sm font-medium"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {label}
+        </label>
+        {hint && (
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {hint}
+          </span>
+        )}
       </div>
       {children}
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && (
+        <p className="text-xs" style={{ color: 'var(--error-text)' }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
 
 function input(hasError: boolean) {
-  return `w-full rounded-md border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition ${
-    hasError ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
+  return `w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
+    hasError
+      ? 'border-red-400 bg-red-50 focus:ring-red-200'
+      : 'focus:ring-blue-100'
   }`;
 }

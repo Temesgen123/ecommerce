@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
-// ─── Validation schema ────────────────────────────────────────
 const ProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z
@@ -18,13 +17,12 @@ const ProductSchema = z.object({
   description: z.string().optional(),
   price: z.coerce
     .number({ invalid_type_error: 'Price must be a number' })
-    .min(0, 'Price must be positive'),
+    .min(0),
   compareAt: z.coerce.number().min(0).optional().nullable(),
-  stock: z.coerce.number().int().min(0, 'Stock must be 0 or more'),
+  stock: z.coerce.number().int().min(0),
   categoryId: z.string().optional().nullable(),
   published: z.coerce.boolean().optional(),
   featured: z.coerce.boolean().optional(),
-  images: z.array(z.string().url()).optional(),
 });
 
 export type ProductFormState = {
@@ -32,9 +30,20 @@ export type ProductFormState = {
   message?: string;
 };
 
-// ─── Helpers ──────────────────────────────────────────────────
 function toCents(dollars: number) {
   return Math.round(dollars * 100);
+}
+
+// Extract image URLs from FormData (images[0], images[1], ...)
+function extractImages(formData: FormData): string[] {
+  const images: string[] = [];
+  let i = 0;
+  while (formData.has(`images[${i}]`)) {
+    const url = formData.get(`images[${i}]`) as string;
+    if (url) images.push(url);
+    i++;
+  }
+  return images;
 }
 
 // ─── Create ───────────────────────────────────────────────────
@@ -52,7 +61,6 @@ export async function createProduct(
     categoryId: formData.get('categoryId') || null,
     published: formData.get('published') === 'on',
     featured: formData.get('featured') === 'on',
-    images: [],
   };
 
   const parsed = ProductSchema.safeParse(raw);
@@ -60,6 +68,7 @@ export async function createProduct(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
+  const images = extractImages(formData);
   const { price, compareAt, ...rest } = parsed.data;
 
   try {
@@ -68,7 +77,7 @@ export async function createProduct(
         ...rest,
         price: toCents(price),
         compareAt: compareAt ? toCents(compareAt) : null,
-        images: [],
+        images,
       },
     });
   } catch (e: unknown) {
@@ -99,7 +108,6 @@ export async function updateProduct(
     categoryId: formData.get('categoryId') || null,
     published: formData.get('published') === 'on',
     featured: formData.get('featured') === 'on',
-    images: [],
   };
 
   const parsed = ProductSchema.safeParse(raw);
@@ -107,6 +115,7 @@ export async function updateProduct(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
+  const images = extractImages(formData);
   const { price, compareAt, ...rest } = parsed.data;
 
   try {
@@ -116,6 +125,7 @@ export async function updateProduct(
         ...rest,
         price: toCents(price),
         compareAt: compareAt ? toCents(compareAt) : null,
+        images,
       },
     });
   } catch (e: unknown) {
@@ -137,7 +147,6 @@ export async function deleteProduct(id: string): Promise<void> {
   revalidatePath('/admin/products');
 }
 
-// ─── Slug generator helper (called client-side via action) ────
 export async function checkSlugAvailable(
   slug: string,
   excludeId?: string,
