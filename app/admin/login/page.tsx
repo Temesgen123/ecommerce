@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+// ── Inner form — uses useSearchParams so needs Suspense ───────
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState('');
@@ -32,6 +33,62 @@ export default function LoginPage() {
     router.refresh();
   }
 
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div
+          className="rounded-lg px-4 py-3 text-sm font-medium"
+          style={{ background: 'var(--error-bg)', color: 'var(--error-text)' }}
+        >
+          {error}
+        </div>
+      )}
+      <div className="space-y-1.5">
+        <label
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Email
+        </label>
+        <input
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="admin@example.com"
+          className="input-theme w-full px-4 py-2.5 text-sm"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Password
+        </label>
+        <input
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="input-theme w-full px-4 py-2.5 text-sm"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="btn-navy w-full py-2.5 text-sm disabled:opacity-50 mt-2"
+      >
+        {loading ? 'Signing in…' : 'Sign in →'}
+      </button>
+    </form>
+  );
+}
+
+// ── Page shell — wraps form in Suspense ───────────────────────
+export default function LoginPage() {
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Left panel — navy brand */}
@@ -68,59 +125,26 @@ export default function LoginPage() {
             Enter your admin credentials to continue.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div
-                className="rounded-lg px-4 py-3 text-sm font-medium"
-                style={{
-                  background: 'var(--error-bg)',
-                  color: 'var(--error-text)',
-                }}
-              >
-                {error}
+          <Suspense
+            fallback={
+              <div className="space-y-4">
+                <div
+                  className="h-10 rounded-lg animate-pulse"
+                  style={{ background: 'var(--bg-elevated)' }}
+                />
+                <div
+                  className="h-10 rounded-lg animate-pulse"
+                  style={{ background: 'var(--bg-elevated)' }}
+                />
+                <div
+                  className="h-10 rounded-lg animate-pulse"
+                  style={{ background: 'var(--bg-elevated)' }}
+                />
               </div>
-            )}
-            <div className="space-y-1.5">
-              <label
-                className="text-xs font-semibold uppercase tracking-wide"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Email
-              </label>
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-                className="input-theme w-full px-4 py-2.5 text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label
-                className="text-xs font-semibold uppercase tracking-wide"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Password
-              </label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-theme w-full px-4 py-2.5 text-sm"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-navy w-full py-2.5 text-sm disabled:opacity-50 mt-2"
-            >
-              {loading ? 'Signing in…' : 'Sign in →'}
-            </button>
-          </form>
+            }
+          >
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </div>

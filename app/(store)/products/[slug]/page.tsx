@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import AddToCartButton from '@/components/store/AddToCartButton';
+import ProductImageGallery from '@/components/store/ProductImageGallery';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -21,49 +22,22 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
+
   const product = await prisma.product.findUnique({
     where: { slug, published: true },
     include: { category: { select: { name: true, slug: true } } },
   });
 
   if (!product) notFound();
-  const image = product.images[0] ?? null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        {/* Image */}
-        <div
-          className="aspect-square w-full overflow-hidden rounded-2xl"
-          style={{ background: 'var(--bg-elevated)' }}
-        >
-          {image ? (
-            <img
-              src={image}
-              alt={product.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <svg
-                className="h-24 w-24 opacity-20"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-          )}
-        </div>
+        {/* Image gallery */}
+        <ProductImageGallery
+          images={product.images}
+          productName={product.name}
+        />
 
         {/* Info */}
         <div className="flex flex-col gap-5">
@@ -84,6 +58,7 @@ export default async function ProductDetailPage({ params }: Props) {
             {product.name}
           </h1>
 
+          {/* Price */}
           <div className="flex items-baseline gap-3">
             <span
               className="text-3xl font-bold"
@@ -112,6 +87,7 @@ export default async function ProductDetailPage({ params }: Props) {
             )}
           </div>
 
+          {/* Description */}
           {product.description && (
             <p
               className="text-sm leading-relaxed"
@@ -121,6 +97,7 @@ export default async function ProductDetailPage({ params }: Props) {
             </p>
           )}
 
+          {/* Stock */}
           <p className="text-sm font-medium">
             {product.stock > 0 ? (
               <span style={{ color: 'var(--success-text)' }}>
@@ -131,13 +108,14 @@ export default async function ProductDetailPage({ params }: Props) {
             )}
           </p>
 
+          {/* Add to cart */}
           <AddToCartButton
             product={{
               id: product.id,
               name: product.name,
               slug: product.slug,
               price: product.price,
-              image,
+              image: product.images[0] ?? null,
               stock: product.stock,
             }}
           />

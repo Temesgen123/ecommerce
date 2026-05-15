@@ -15,9 +15,7 @@ const ProductSchema = z.object({
       'Slug must be lowercase with hyphens only',
     ),
   description: z.string().optional(),
-  price: z.coerce
-    .number({ invalid_type_error: 'Price must be a number' })
-    .min(0),
+  price: z.coerce.number().min(0, 'Price must be a positive number'),
   compareAt: z.coerce.number().min(0).optional().nullable(),
   stock: z.coerce.number().int().min(0),
   categoryId: z.string().optional().nullable(),

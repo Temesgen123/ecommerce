@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export const runtime = 'nodejs';
 
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
   }
 
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const shippingCost = session.shipping_cost?.amount_total ?? 0;
+  const shippingCost = (session as any).shipping_cost?.amount_total ?? 0;
   const tax = session.total_details?.amount_tax ?? 0;
   const total = subtotal + shippingCost + tax;
 
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
     total,
   );
 
-  const addr = session.shipping_details?.address;
+  const addr = (session as any).shipping_details?.address;
   const shippingAddress = addr
     ? {
         line1: addr.line1 ?? '',
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
             : null,
         customerEmail: session.customer_details?.email ?? 'unknown@example.com',
         customerName: session.customer_details?.name ?? null,
-        shippingAddress,
+        shippingAddress: shippingAddress ?? Prisma.JsonNull,
         subtotal,
         shippingCost,
         tax,
