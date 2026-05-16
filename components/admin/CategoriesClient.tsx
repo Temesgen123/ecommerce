@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Pencil, Trash2, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Pencil, Trash2, X } from 'lucide-react';
 import CategoryForm from './CategoryForm';
 import {
   createCategory,
