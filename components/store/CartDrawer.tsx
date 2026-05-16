@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
-import { useRouter } from 'next/navigation';
+import { createCheckoutSession } from '@/app/actions/checkout';
+import { useTransition, useState } from 'react';
+import { validateDiscountCode } from '@/app/actions/discounts';
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('en-US', {
@@ -12,14 +14,52 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
+interface AppliedDiscount {
+  id: string;
+  code: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  savings: number;
+}
+
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, totalPrice } =
     useCartStore();
-  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [appliedDiscount, setAppliedDiscount] =
+    useState<AppliedDiscount | null>(null);
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountError, setDiscountError] = useState('');
+  const [discountPending, startDiscountTransition] = useTransition();
+
+  const subtotal = totalPrice();
+  const savings = appliedDiscount?.savings ?? 0;
+  const total = Math.max(0, subtotal - savings);
 
   function handleCheckout() {
-    closeCart();
-    router.push('/checkout');
+    startTransition(async () => {
+      await createCheckoutSession(items, appliedDiscount?.code ?? null);
+    });
+  }
+
+  function handleApplyDiscount() {
+    if (!discountCode.trim()) return;
+    setDiscountError('');
+    startDiscountTransition(async () => {
+      const result = await validateDiscountCode(discountCode, subtotal);
+      if (result.valid && result.discount) {
+        setAppliedDiscount(result.discount);
+        setDiscountCode('');
+      } else {
+        setDiscountError(result.message ?? 'Invalid code.');
+      }
+    });
+  }
+
+  function handleRemoveDiscount() {
+    setAppliedDiscount(null);
+    setDiscountCode('');
+    setDiscountError('');
   }
 
   return (
@@ -29,7 +69,9 @@ export default function CartDrawer() {
       )}
 
       <div
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
       >
         {/* Header */}
         <div
@@ -84,7 +126,7 @@ export default function CartDrawer() {
               {items.map((item) => (
                 <li key={item.id} className="flex gap-4 py-4">
                   <div
-                    className="h-18 w-16 flex-shrink-0 rounded-lg overflow-hidden"
+                    className="h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden"
                     style={{ background: 'var(--bg-elevated)' }}
                   >
                     {item.image ? (
@@ -102,6 +144,7 @@ export default function CartDrawer() {
                       </div>
                     )}
                   </div>
+
                   <div className="flex flex-1 flex-col gap-1">
                     <div className="flex items-start justify-between gap-2">
                       <Link
@@ -121,7 +164,7 @@ export default function CartDrawer() {
                       </button>
                     </div>
                     <p
-                      className="text-sm font-semibold"
+                      className="text-sm font-bold"
                       style={{ color: 'var(--accent)' }}
                     >
                       {formatPrice(item.price)}
@@ -168,34 +211,103 @@ export default function CartDrawer() {
         {/* Footer */}
         {items.length > 0 && (
           <div
-            className="px-5 py-5 space-y-4"
+            className="px-5 py-4 space-y-3"
             style={{
               borderTop: '1px solid var(--border-subtle)',
               background: 'var(--bg-base)',
             }}
           >
-            <div className="flex items-center justify-between">
-              <span
-                className="text-sm"
-                style={{ color: 'var(--text-secondary)' }}
+            {/* Discount code */}
+            {appliedDiscount ? (
+              <div
+                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm"
+                style={{
+                  background: 'var(--success-bg)',
+                  border: '1px solid rgba(22,163,74,0.2)',
+                }}
               >
-                Subtotal
-              </span>
-              <span
-                className="text-lg font-bold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {formatPrice(totalPrice())}
-              </span>
+                <span style={{ color: 'var(--success-text)' }}>
+                  ✓ <strong>{appliedDiscount.code}</strong> applied
+                </span>
+                <button
+                  onClick={handleRemoveDiscount}
+                  className="text-xs underline ml-2"
+                  style={{ color: 'var(--success-text)' }}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={discountCode}
+                    onChange={(e) => {
+                      setDiscountCode(e.target.value.toUpperCase());
+                      setDiscountError('');
+                    }}
+                    onKeyDown={(e) =>
+                      e.key === 'Enter' && handleApplyDiscount()
+                    }
+                    placeholder="Discount code"
+                    className="input-theme flex-1 px-3 py-1.5 text-sm font-mono"
+                    disabled={discountPending}
+                  />
+                  <button
+                    onClick={handleApplyDiscount}
+                    disabled={discountPending || !discountCode.trim()}
+                    className="btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  >
+                    {discountPending ? '…' : 'Apply'}
+                  </button>
+                </div>
+                {discountError && (
+                  <p className="text-xs" style={{ color: 'var(--error-text)' }}>
+                    {discountError}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Totals */}
+            <div
+              className="space-y-1.5 text-sm pt-1"
+              style={{ borderTop: '1px solid var(--border-subtle)' }}
+            >
+              <div className="flex items-center justify-between pt-1">
+                <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
+                <span style={{ color: 'var(--text-primary)' }}>
+                  {formatPrice(subtotal)}
+                </span>
+              </div>
+              {appliedDiscount && (
+                <div
+                  className="flex items-center justify-between font-semibold"
+                  style={{ color: 'var(--success-text)' }}
+                >
+                  <span>Discount</span>
+                  <span>−{formatPrice(savings)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between font-bold">
+                <span style={{ color: 'var(--text-primary)' }}>Total</span>
+                <span className="text-base" style={{ color: 'var(--accent)' }}>
+                  {formatPrice(total)}
+                </span>
+              </div>
             </div>
+
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Shipping and taxes calculated at checkout.
+              Shipping calculated at checkout.
             </p>
+
             <button
               onClick={handleCheckout}
-              className="btn-primary w-full py-3 text-sm"
+              disabled={isPending}
+              className="btn-primary w-full py-3 text-sm font-bold disabled:opacity-60"
             >
-              Checkout →
+              {isPending ? 'Redirecting…' : 'Checkout →'}
             </button>
           </div>
         )}

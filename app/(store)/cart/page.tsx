@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import { createCheckoutSession } from '@/app/actions/checkout';
-import { useTransition } from 'react';
+import { useTransition, useState } from 'react';
+import DiscountInput from '@/components/store/DiscountInput';
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('en-US', {
@@ -13,14 +14,28 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
+interface AppliedDiscount {
+  id: string;
+  code: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  savings: number;
+}
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, totalPrice, totalItems } =
     useCartStore();
   const [isPending, startTransition] = useTransition();
+  const [appliedDiscount, setAppliedDiscount] =
+    useState<AppliedDiscount | null>(null);
+
+  const subtotal = totalPrice();
+  const savings = appliedDiscount?.savings ?? 0;
+  const total = Math.max(0, subtotal - savings);
 
   function handleCheckout() {
     startTransition(async () => {
-      await createCheckoutSession(items);
+      await createCheckoutSession(items, appliedDiscount?.code ?? null);
     });
   }
 
@@ -188,15 +203,36 @@ export default function CartPage() {
 
             <div style={{ borderTop: '1px solid var(--border-subtle)' }} />
 
+            {/* Discount code input */}
+            <DiscountInput
+              cartTotal={subtotal}
+              appliedCode={appliedDiscount?.code ?? null}
+              onApply={(discount) => setAppliedDiscount(discount)}
+            />
+
+            <div style={{ borderTop: '1px solid var(--border-subtle)' }} />
+
+            {/* Totals */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-secondary)' }}>
                   Subtotal ({totalItems()} items)
                 </span>
                 <span style={{ color: 'var(--text-primary)' }}>
-                  {formatPrice(totalPrice())}
+                  {formatPrice(subtotal)}
                 </span>
               </div>
+
+              {appliedDiscount && (
+                <div
+                  className="flex justify-between font-semibold"
+                  style={{ color: 'var(--success-text)' }}
+                >
+                  <span>Discount ({appliedDiscount.code})</span>
+                  <span>−{formatPrice(savings)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-secondary)' }}>Shipping</span>
                 <span style={{ color: 'var(--success-text)' }}>
@@ -210,7 +246,7 @@ export default function CartPage() {
             <div className="flex justify-between font-bold">
               <span style={{ color: 'var(--text-primary)' }}>Total</span>
               <span className="text-lg" style={{ color: 'var(--accent)' }}>
-                {formatPrice(totalPrice())}
+                {formatPrice(total)}
               </span>
             </div>
 

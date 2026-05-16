@@ -5,12 +5,13 @@ import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import type { CartItem } from '@/lib/cart-store';
 
-export async function createCheckoutSession(items: CartItem[]) {
-  if (!items || items.length === 0) {
-    throw new Error('Cart is empty.');
-  }
+export async function createCheckoutSession(
+  items: CartItem[],
+  discountCode: string | null = null,
+) {
+  if (!items || items.length === 0) throw new Error('Cart is empty.');
 
-  // Verify every product still exists and is published
+  // Verify products still exist and are published
   const productIds = items.map((i) => i.id);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, published: true },
@@ -20,13 +21,13 @@ export async function createCheckoutSession(items: CartItem[]) {
     throw new Error('One or more products are no longer available.');
   }
 
-  // Build Stripe line items using DB prices (never trust client-side prices)
+  // Build line items using DB prices
   const lineItems = items.map((item) => {
     const product = products.find((p) => p.id === item.id)!;
     return {
       price_data: {
         currency: 'usd',
-        unit_amount: product.price, // already in cents
+        unit_amount: product.price,
         product_data: {
           name: product.name,
           ...(product.images[0] ? { images: [product.images[0]] } : {}),
@@ -38,9 +39,31 @@ export async function createCheckoutSession(items: CartItem[]) {
 
   const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
+  // ── Handle discount code ──────────────────────────────────
+  let stripeDiscounts: { coupon: string }[] = [];
+
+  if (discountCode) {
+    const dc = await prisma.discountCode.findUnique({
+      where: { code: discountCode.toUpperCase().trim() },
+    });
+
+    if (dc && dc.active) {
+      // Create a one-time Stripe coupon matching our discount
+      const coupon = await stripe.coupons.create({
+        name: `${dc.code}`,
+        duration: 'once',
+        ...(dc.type === 'PERCENTAGE'
+          ? { percent_off: dc.value }
+          : { amount_off: dc.value, currency: 'usd' }),
+      });
+      stripeDiscounts = [{ coupon: coupon.id }];
+    }
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: lineItems,
+    discounts: stripeDiscounts.length > 0 ? stripeDiscounts : undefined,
     success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/cart`,
     shipping_address_collection: {
@@ -70,7 +93,6 @@ export async function createCheckoutSession(items: CartItem[]) {
         },
       },
     ],
-    // Store cart metadata so the webhook can create the order
     metadata: {
       cart: JSON.stringify(
         items.map((i) => ({
@@ -81,11 +103,11 @@ export async function createCheckoutSession(items: CartItem[]) {
           slug: i.slug,
         })),
       ),
+      discountCode: discountCode ?? '',
     },
   });
 
   if (!session.url)
     throw new Error('Failed to create Stripe checkout session.');
-
   redirect(session.url);
 }

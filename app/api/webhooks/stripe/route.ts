@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { sendOrderConfirmationEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
@@ -11,13 +12,6 @@ export async function POST(req: NextRequest) {
 
   const body = await req.text();
   const sig = req.headers.get('stripe-signature');
-
-  console.log('📋 Signature present:', !!sig);
-  console.log('📋 Body length:', body.length);
-  console.log(
-    '📋 STRIPE_WEBHOOK_SECRET set:',
-    !!process.env.STRIPE_WEBHOOK_SECRET,
-  );
 
   if (!sig) {
     console.error('❌ Missing stripe-signature header');
@@ -101,17 +95,6 @@ export async function POST(req: NextRequest) {
   const tax = session.total_details?.amount_tax ?? 0;
   const total = subtotal + shippingCost + tax;
 
-  console.log(
-    '💰 Subtotal:',
-    subtotal,
-    'Shipping:',
-    shippingCost,
-    'Tax:',
-    tax,
-    'Total:',
-    total,
-  );
-
   const addr = (session as any).shipping_details?.address;
   const shippingAddress = addr
     ? {
@@ -124,8 +107,9 @@ export async function POST(req: NextRequest) {
       }
     : null;
 
+  let order;
   try {
-    const order = await prisma.order.create({
+    order = await prisma.order.create({
       data: {
         status: 'PAID',
         stripeSessionId: session.id,
@@ -151,6 +135,7 @@ export async function POST(req: NextRequest) {
           })),
         },
       },
+      include: { items: true },
     });
 
     console.log('✅ Order created:', order.id);
@@ -173,6 +158,34 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+
+  // Increment discount code usage count
+  const discountCodeUsed = session.metadata?.discountCode;
+  if (discountCodeUsed) {
+    await prisma.discountCode.update({
+      where: { code: discountCodeUsed },
+      data: { usedCount: { increment: 1 } },
+    });
+    console.log(`✅ Discount code usage incremented: ${discountCodeUsed}`);
+  }
+
+  // Send confirmation email — never let this block the webhook response
+  await sendOrderConfirmationEmail({
+    orderId: order.id,
+    customerEmail: order.customerEmail,
+    customerName: order.customerName,
+    items: order.items.map((item) => ({
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      total: item.total,
+    })),
+    subtotal: order.subtotal,
+    shippingCost: order.shippingCost,
+    tax: order.tax,
+    total: order.total,
+    shippingAddress: shippingAddress,
+  });
 
   return NextResponse.json({ received: true });
 }
