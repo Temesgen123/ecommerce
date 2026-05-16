@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from 'react';
 import { Pencil, Trash2, X, ChevronDown, ChevronUp } from 'lucide-react';
-// import CategoryForm from './CategoryForm';
-// import {
-//   createCategory,
-//   updateCategory,
-//   deleteCategory,
-// } from '@/app/actions/categories';
+import CategoryForm from './CategoryForm';
+import {
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from '@/app/actions/categories';
 // import type { Category } from '@prisma/client';
 interface Category {
   id: string;
