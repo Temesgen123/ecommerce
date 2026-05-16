@@ -113,7 +113,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {orders.map((order) => (
+              {orders.map((order: any) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-3 font-mono text-xs text-gray-500">
                     #{order.id.slice(0, 8).toUpperCase()}
