@@ -97,7 +97,7 @@ export default async function SuccessPage({ searchParams }: Props) {
 
           <div style={{ borderTop: '1px solid var(--border-subtle)' }} />
 
-          {order.items.map((item) => (
+          {order.items.map((item: any) => (
             <div
               key={item.id}
               className="flex items-center justify-between text-sm"
