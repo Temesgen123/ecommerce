@@ -63,7 +63,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
           <span
             className={`rounded-full px-1.5 py-0.5 text-xs ${!activeStatus ? 'bg-white/20 text-white' : 'bg-white text-gray-600'}`}
           >
-            {counts.reduce((s, c: any) => s + c._count, 0)}
+            {counts.reduce((s: number, c: any) => s + c._count, 0)}
           </span>
         </Link>
         {ORDER_STATUSES.map((s: OrderStatus) => (
