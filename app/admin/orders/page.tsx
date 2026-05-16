@@ -35,7 +35,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     by: ['status'],
     _count: true,
   });
-  const countMap = Object.fromEntries(counts.map((c) => [c.status, c._count]));
+  const countMap = Object.fromEntries(
+    counts.map((c: any) => [c.status, c._count]),
+  );
 
   return (
     <div className="space-y-6">
