@@ -8,7 +8,19 @@ import {
   deleteDiscountCode,
   type DiscountFormState,
 } from '@/app/actions/discounts';
-import type { DiscountCode } from '@prisma/client';
+interface DiscountCode {
+  id: string;
+  code: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  minOrderValue: number | null;
+  maxUses: number | null;
+  usedCount: number;
+  active: boolean;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface DiscountsClientProps {
   codes: DiscountCode[];
