@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import AddToCartButton from '@/components/store/AddToCartButton';
 import ProductImageGallery from '@/components/store/ProductImageGallery';
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: Promise<{ slug: string }>;
 }

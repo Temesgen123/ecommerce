@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/store/ProductsCard';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'Home' };
 
 export default async function HomePage() {

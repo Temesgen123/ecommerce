@@ -4,6 +4,8 @@ import { deleteProduct } from '@/app/actions/products';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { Plus, Pencil, PackageX, ImageOff } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'Products' };
 
 function formatPrice(cents: number) {

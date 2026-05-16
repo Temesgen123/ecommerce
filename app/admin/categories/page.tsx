@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import CategoriesClient from '@/components/admin/CategoriesClient';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'Categories' };
 
 export default async function AdminCategoriesPage() {
