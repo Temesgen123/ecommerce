@@ -2,9 +2,13 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import type { ProductFormState } from '@/app/actions/products';
-import type { Category } from '@prisma/client';
 import ImageUploader from '@/components/admin/ImageUploader';
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 interface ProductFormProps {
   action: (
     prev: ProductFormState,
