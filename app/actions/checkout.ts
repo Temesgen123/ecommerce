@@ -98,7 +98,7 @@ export async function createCheckoutSession(
         items.map((i) => ({
           id: i.id,
           quantity: i.quantity,
-          price: products.find((p) => p.id === i.id)!.price,
+          price: products.find((p: any) => p.id === i.id)!.price,
           name: i.name,
           slug: i.slug,
         })),
