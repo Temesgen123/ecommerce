@@ -58,7 +58,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   ]);
 
   const totalPages = Math.ceil(totalCount / PRODUCTS_PER_PAGE);
-  const activeCategory = categories.find((c) => c.slug === category);
+  const activeCategory = categories.find((c: any) => c.slug === category);
 
   // Page heading
   let heading = 'All Products';
@@ -137,7 +137,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                   All Products
                 </Link>
               </li>
-              {categories.map((cat) => (
+              {categories.map((cat: any) => (
                 <li key={cat.id}>
                   <Link
                     href={
@@ -201,7 +201,7 @@ export default async function ProductsPage({ searchParams }: Props) {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                {products.map((product) => (
+                {products.map((product: any) => (
                   <ProductCard
                     key={product.id}
                     id={product.id}
