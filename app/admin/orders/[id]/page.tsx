@@ -112,7 +112,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {order.items.map((item) => (
+            {order.items.map((item: any) => (
               <tr key={item.id}>
                 <td className="px-5 py-3">
                   <p className="font-medium text-gray-900">
