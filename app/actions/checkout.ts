@@ -23,7 +23,7 @@ export async function createCheckoutSession(
 
   // Build line items using DB prices
   const lineItems = items.map((item) => {
-    const product = products.find((p) => p.id === item.id)!;
+    const product = products.find((p: any) => p.id === item.id)!;
     return {
       price_data: {
         currency: 'usd',
