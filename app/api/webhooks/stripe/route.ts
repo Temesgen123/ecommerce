@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+// import { Prisma } from '@prisma/client';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
             : null,
         customerEmail: session.customer_details?.email ?? 'unknown@example.com',
         customerName: session.customer_details?.name ?? null,
-        shippingAddress: shippingAddress ?? Prisma.JsonNull,
+        shippingAddress: shippingAddress ?? undefined,
         subtotal,
         shippingCost,
         tax,
