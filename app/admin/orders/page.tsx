@@ -66,7 +66,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
             {counts.reduce((s: any, c: any) => s + c._count, 0)}
           </span>
         </Link>
-        {ORDER_STATUSES.map((s) => (
+        {ORDER_STATUSES.map((s: any) => (
           <Link
             key={s}
             href={`/admin/orders?status=${s}`}
