@@ -82,7 +82,7 @@ export default async function AdminProductsPage() {
               className="divide-y"
               style={{ borderColor: 'var(--border-subtle)' }}
             >
-              {products.map((product) => (
+              {products.map((product: any) => (
                 <tr
                   key={product.id}
                   className="hover:bg-gray-50 transition-colors"
