@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
     orderId: order.id,
     customerEmail: order.customerEmail,
     customerName: order.customerName,
-    items: order.items.map((item) => ({
+    items: order.items.map((item: any) => ({
       productName: item.productName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
