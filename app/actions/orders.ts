@@ -28,10 +28,20 @@ export async function updateOrderStatus(
   if (!parsed.success) return { error: 'Invalid status.' };
 
   try {
-    await prisma.order.update({
-      where: { id },
-      data: { status: parsed.data },
-    });
+    // Update status and record history in a transaction
+    await prisma.$transaction([
+      prisma.order.update({
+        where: { id },
+        data: { status: parsed.data },
+      }),
+      prisma.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: parsed.data,
+          note: (formData.get('note') as string) || null,
+        },
+      }),
+    ]);
   } catch {
     return { error: 'Failed to update order status.' };
   }
@@ -39,4 +49,14 @@ export async function updateOrderStatus(
   revalidatePath('/admin/orders');
   revalidatePath(`/admin/orders/${id}`);
   return { success: true };
+}
+
+// Called from webhook when order is first created as PAID
+export async function recordInitialOrderStatus(
+  orderId: string,
+  status: 'PAID' | 'PENDING',
+) {
+  await prisma.orderStatusHistory.create({
+    data: { orderId, status },
+  });
 }

@@ -6,7 +6,7 @@ import SearchBar from '@/components/store/SearchBar';
 import Pagination from '@/components/store/Pagination';
 import { Search } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Products' };
 

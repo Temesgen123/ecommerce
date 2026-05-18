@@ -10,7 +10,7 @@ import {
 } from '@/lib/order-utils';
 import { ShoppingBag } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Orders' };
 

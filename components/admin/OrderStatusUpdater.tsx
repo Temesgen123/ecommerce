@@ -25,29 +25,63 @@ export default function OrderStatusUpdater({
   >(action, {});
 
   return (
-    <form action={formAction} className="flex items-center gap-3">
-      {state.error && <p className="text-xs text-red-600">{state.error}</p>}
-      {state.success && (
-        <p className="text-xs text-green-600">Status updated.</p>
+    <form action={formAction} className="space-y-3">
+      {state.error && (
+        <p
+          className="text-xs font-medium rounded-lg px-3 py-2"
+          style={{ background: 'var(--error-bg)', color: 'var(--error-text)' }}
+        >
+          {state.error}
+        </p>
       )}
-      <select
-        name="status"
-        defaultValue={currentStatus}
-        className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 transition"
-      >
-        {ORDER_STATUSES.map((s) => (
-          <option key={s} value={s}>
-            {STATUS_LABEL[s as OrderStatus]}
-          </option>
-        ))}
-      </select>
-      <button
-        type="submit"
-        disabled={isPending}
-        className="rounded-md bg-gray-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-50"
-      >
-        {isPending ? 'Saving…' : 'Update Status'}
-      </button>
+      {state.success && (
+        <p
+          className="text-xs font-medium rounded-lg px-3 py-2"
+          style={{
+            background: 'var(--success-bg)',
+            color: 'var(--success-text)',
+          }}
+        >
+          ✓ Status updated successfully.
+        </p>
+      )}
+
+      <div className="flex items-center gap-3">
+        <select
+          name="status"
+          defaultValue={currentStatus}
+          className="input-theme rounded-lg px-3 py-2 text-sm flex-1"
+        >
+          {ORDER_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABEL[s as OrderStatus]}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="btn-navy rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 flex-shrink-0"
+        >
+          {isPending ? 'Saving…' : 'Update'}
+        </button>
+      </div>
+
+      {/* Optional note */}
+      <div className="space-y-1">
+        <label className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          Note{' '}
+          <span style={{ color: 'var(--text-muted)' }}>
+            (optional — e.g. tracking number)
+          </span>
+        </label>
+        <input
+          type="text"
+          name="note"
+          placeholder="e.g. Shipped via FedEx — tracking #123456"
+          className="input-theme w-full px-3 py-2 text-sm"
+        />
+      </div>
     </form>
   );
 }

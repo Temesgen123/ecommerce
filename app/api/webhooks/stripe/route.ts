@@ -187,5 +187,9 @@ export async function POST(req: NextRequest) {
     shippingAddress: shippingAddress,
   });
 
+  // Record initial status in history
+  await prisma.orderStatusHistory.create({
+    data: { orderId: order.id, status: 'PAID' },
+  });
   return NextResponse.json({ received: true });
 }
