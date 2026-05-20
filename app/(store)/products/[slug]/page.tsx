@@ -4,6 +4,7 @@ import AddToCartButton from '@/components/store/AddToCartButton';
 import ProductImageGallery from '@/components/store/ProductImageGallery';
 import ReviewList from '@/components/store/ReviewList';
 import ReviewForm from '@/components/store/ReviewForm';
+import RelatedProducts from '@/components/store/RelatedProducts';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +85,7 @@ export default async function ProductDetailPage({ params }: Props) {
             {product.name}
           </h1>
 
-          {/* Rating summary inline */}
+          {/* Inline rating */}
           {totalReviews > 0 && (
             <div className="flex items-center gap-2">
               <div className="flex">
@@ -174,12 +175,13 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Related products */}
+      <RelatedProducts productId={product.id} categoryId={product.categoryId} />
+
       {/* Reviews section */}
       <div className="mt-16 space-y-10">
         <div style={{ borderTop: '2px solid var(--border-subtle)' }} />
-
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-          {/* Review list */}
           <div>
             <h2
               className="text-xl font-bold mb-6"
@@ -193,8 +195,6 @@ export default async function ProductDetailPage({ params }: Props) {
               total={totalReviews}
             />
           </div>
-
-          {/* Write a review */}
           <div>
             <h2
               className="text-xl font-bold mb-6"
