@@ -54,7 +54,7 @@ model Product {
   images      String[]
   published   Boolean     @default(false)
   featured    Boolean     @default(false)
-
+  reviews     ProductReview[]
   categoryId  String?
   category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
@@ -160,4 +160,22 @@ model OrderStatusHistory {
 
   @@index([orderId])
   @@map("order_status_history")
+}
+
+model ProductReview {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating      Int
+  title       String?
+  body        String
+  authorName  String
+  authorEmail String
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([productId])
+  @@index([approved])
+  @@map("product_reviews")
 }

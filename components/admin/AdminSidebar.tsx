@@ -10,6 +10,7 @@ import {
   Tag,
   LogOut,
   Percent,
+  Star,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -22,6 +23,7 @@ const navItems = [
   { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { label: 'Categories', href: '/admin/categories', icon: Tag },
   { label: 'Discounts', href: '/admin/discounts', icon: Percent },
+  { label: 'Reviews', href: '/admin/reviews', icon: Star },
 ];
 
 export default function AdminSidebar({ user }: AdminSidebarProps) {
