@@ -9,8 +9,6 @@ export default function Navbar() {
   const totalItems = useCartStore((s) => s.totalItems());
   const openCart = useCartStore((s) => s.openCart);
   const [mounted, setMounted] = useState(false);
-
-  // Only show cart count after hydration to avoid SSR mismatch
   useEffect(() => setMounted(true), []);
 
   return (
@@ -22,6 +20,7 @@ export default function Navbar() {
       }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        {/* Logo */}
         <Link
           href="/"
           className="text-xl font-bold tracking-tight"
@@ -30,6 +29,7 @@ export default function Navbar() {
           My<span style={{ color: 'var(--accent)' }}>Store</span>
         </Link>
 
+        {/* Nav links */}
         <nav className="hidden sm:flex items-center gap-6">
           <Link
             href="/products"
@@ -44,8 +44,22 @@ export default function Navbar() {
           >
             Products
           </Link>
+          <Link
+            href="/track-order"
+            className="text-sm font-medium transition-colors"
+            style={{ color: 'var(--navy-100)' }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLElement).style.color = '#fff')
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLElement).style.color = 'var(--navy-100)')
+            }
+          >
+            Track Order
+          </Link>
         </nav>
 
+        {/* Cart */}
         <button
           onClick={openCart}
           aria-label="Open cart"
