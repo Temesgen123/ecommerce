@@ -197,7 +197,7 @@ export default function AnalyticsDashboard({ data }: { data: AnalyticsData }) {
               tickLine={false}
             />
             <Tooltip
-              formatter={(value: number) => [formatPriceFull(value), 'Revenue']}
+              formatter={(value: any) => [formatPriceFull(value), 'Revenue']}
               labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
               contentStyle={{
                 background: '#fff',
@@ -258,7 +258,7 @@ export default function AnalyticsDashboard({ data }: { data: AnalyticsData }) {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number, name: string) => [value, name]}
+                  formatter={(value: any, name: any) => [value, name]}
                   contentStyle={{
                     background: '#fff',
                     border: '1px solid var(--border-base)',
@@ -331,7 +331,7 @@ export default function AnalyticsDashboard({ data }: { data: AnalyticsData }) {
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: number) => [
+                  formatter={(value: any) => [
                     formatPriceFull(value),
                     'Revenue',
                   ]}
