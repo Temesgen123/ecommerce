@@ -34,7 +34,7 @@ function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
       {error && (
         <div
           className="rounded-lg px-4 py-3 text-sm font-medium"
@@ -69,7 +69,7 @@ function LoginForm() {
         </label>
         <input
           type="password"
-          autoComplete="current-password"
+          autoComplete="new-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}

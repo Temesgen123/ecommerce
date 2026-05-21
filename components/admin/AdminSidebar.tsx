@@ -11,6 +11,7 @@ import {
   LogOut,
   Percent,
   Star,
+  BarChart2,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -19,6 +20,7 @@ interface AdminSidebarProps {
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Analytics', href: '/admin/analytics', icon: BarChart2 },
   { label: 'Products', href: '/admin/products', icon: Package },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { label: 'Categories', href: '/admin/categories', icon: Tag },
