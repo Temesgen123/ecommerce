@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
-// import { Prisma } from '@prisma/client';
 import { sendOrderConfirmationEmail } from '@/lib/email';
+import { sendLowStockAlert, LOW_STOCK_THRESHOLD } from '@/lib/stock-alert';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -138,20 +138,45 @@ export async function POST(req: NextRequest) {
       },
       include: { items: true },
     });
-
     console.log('✅ Order created:', order.id);
 
-    // Decrement stock
-    await Promise.all(
+    // Record initial PAID status in history
+    await prisma.orderStatusHistory.create({
+      data: { orderId: order.id, status: 'PAID' },
+    });
+
+    // Decrement stock and collect updated stock levels
+    const updatedProducts = await Promise.all(
       cartItems.map((item) =>
         prisma.product.update({
           where: { id: item.id },
           data: { stock: { decrement: item.quantity } },
+          select: { id: true, name: true, slug: true, stock: true },
         }),
       ),
     );
-
     console.log('✅ Stock decremented');
+
+    // Increment discount code usage count
+    const discountCodeUsed = session.metadata?.discountCode;
+    if (discountCodeUsed) {
+      await prisma.discountCode.update({
+        where: { code: discountCodeUsed },
+        data: { usedCount: { increment: 1 } },
+      });
+      console.log(`✅ Discount code usage incremented: ${discountCodeUsed}`);
+    }
+
+    // Check for low/out of stock products and alert admin
+    const alertProducts = updatedProducts.filter(
+      (p) => p.stock <= LOW_STOCK_THRESHOLD,
+    );
+    if (alertProducts.length > 0) {
+      console.log(
+        `⚠️ ${alertProducts.length} product(s) low/out of stock — sending alert`,
+      );
+      await sendLowStockAlert(alertProducts);
+    }
   } catch (err) {
     console.error('❌ Failed to create order:', err);
     return NextResponse.json(
@@ -160,17 +185,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Increment discount code usage count
-  const discountCodeUsed = session.metadata?.discountCode;
-  if (discountCodeUsed) {
-    await prisma.discountCode.update({
-      where: { code: discountCodeUsed },
-      data: { usedCount: { increment: 1 } },
-    });
-    console.log(`✅ Discount code usage incremented: ${discountCodeUsed}`);
-  }
-
-  // Send confirmation email — never let this block the webhook response
+  // Send order confirmation email
   await sendOrderConfirmationEmail({
     orderId: order.id,
     customerEmail: order.customerEmail,
@@ -188,9 +203,5 @@ export async function POST(req: NextRequest) {
     shippingAddress: shippingAddress,
   });
 
-  // Record initial status in history
-  await prisma.orderStatusHistory.create({
-    data: { orderId: order.id, status: 'PAID' },
-  });
   return NextResponse.json({ received: true });
 }
