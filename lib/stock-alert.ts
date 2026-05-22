@@ -6,7 +6,6 @@
 // ============================================================
 
 import { resend } from '@/lib/email';
-//Low-Stock Alert
 const LOW_STOCK_THRESHOLD = parseInt(
   process.env.LOW_STOCK_THRESHOLD ?? '5',
   10,
