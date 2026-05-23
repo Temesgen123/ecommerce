@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import ProductCard from '@/components/store/ProductsCard';
@@ -6,14 +7,43 @@ import SearchBar from '@/components/store/SearchBar';
 import Pagination from '@/components/store/Pagination';
 import { Search } from 'lucide-react';
 
-// export const dynamic = 'force-dynamic';
-
-export const metadata = { title: 'Products' };
+export const dynamic = 'force-dynamic';
 
 const PRODUCTS_PER_PAGE = 12;
 
 interface Props {
   searchParams: Promise<{ category?: string; q?: string; page?: string }>;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: Props): Promise<Metadata> {
+  const { category, q } = await searchParams;
+
+  let title = 'All Products';
+  let description =
+    'Browse thousands of products across electronics, apparel, home goods, and more.';
+
+  if (category) {
+    const cat = await prisma.category.findUnique({ where: { slug: category } });
+    if (cat) {
+      title = `${cat.name}`;
+      description =
+        cat.description ??
+        `Shop ${cat.name} at MyStore. Great prices and fast shipping.`;
+    }
+  }
+
+  if (q) {
+    title = `Search: "${q}"`;
+    description = `Search results for "${q}" at MyStore.`;
+  }
+
+  return {
+    title,
+    description,
+    openGraph: { title: `${title} | MyStore`, description },
+  };
 }
 
 export default async function ProductsPage({ searchParams }: Props) {
@@ -23,7 +53,6 @@ export default async function ProductsPage({ searchParams }: Props) {
   const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10));
   const skip = (currentPage - 1) * PRODUCTS_PER_PAGE;
 
-  // Shared where clause
   const where = {
     published: true,
     ...(category ? { category: { slug: category } } : {}),
@@ -61,170 +90,180 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   const totalPages = Math.ceil(totalCount / PRODUCTS_PER_PAGE);
   const activeCategory = categories.find((c: any) => c.slug === category);
+  const rangeStart = totalCount === 0 ? 0 : skip + 1;
+  const rangeEnd = Math.min(skip + PRODUCTS_PER_PAGE, totalCount);
 
-  // Page heading
   let heading = 'All Products';
   if (searchTerm && activeCategory)
     heading = `"${searchTerm}" in ${activeCategory.name}`;
   else if (searchTerm) heading = `Results for "${searchTerm}"`;
-  else if (activeCategory) heading = activeCategory.name;
+  else if (activeCategory) heading = (activeCategory as any).name;
 
-  // Result range text e.g. "Showing 13–24 of 70 products"
-  const rangeStart = totalCount === 0 ? 0 : skip + 1;
-  const rangeEnd = Math.min(skip + PRODUCTS_PER_PAGE, totalCount);
+  // JSON-LD for product listing
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: heading,
+    url: `${process.env.NEXTAUTH_URL ?? ''}/products${category ? `?category=${category}` : ''}`,
+  };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      {/* Search bar */}
-      <div className="mb-8">
-        <Suspense>
-          <SearchBar />
-        </Suspense>
-      </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-      {/* Heading + result count */}
-      <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-        <div>
-          <h1
-            className="text-2xl font-bold"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {heading}
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            {totalCount === 0
-              ? 'No products found'
-              : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} product${totalCount !== 1 ? 's' : ''}`}
-            {searchTerm && (
-              <>
-                {' — '}
-                <Link
-                  href={`/products${category ? `?category=${category}` : ''}`}
-                  className="underline hover:no-underline"
-                  style={{ color: 'var(--navy-700)' }}
-                >
-                  Clear search
-                </Link>
-              </>
-            )}
-          </p>
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div className="mb-8">
+          <Suspense>
+            <SearchBar />
+          </Suspense>
         </div>
-      </div>
 
-      <div className="flex flex-col gap-8 sm:flex-row">
-        {/* Sidebar filters */}
-        {categories.length > 0 && (
-          <aside className="w-full sm:w-48 flex-shrink-0">
-            <p
-              className="mb-3 text-xs font-bold uppercase tracking-widest"
-              style={{ color: 'var(--text-muted)' }}
+        <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <div>
+            <h1
+              className="text-2xl font-bold"
+              style={{ color: 'var(--text-primary)' }}
             >
-              Category
+              {heading}
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {totalCount === 0
+                ? 'No products found'
+                : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} product${totalCount !== 1 ? 's' : ''}`}
+              {searchTerm && (
+                <>
+                  {' '}
+                  —{' '}
+                  <Link
+                    href={`/products${category ? `?category=${category}` : ''}`}
+                    className="underline hover:no-underline"
+                    style={{ color: 'var(--navy-700)' }}
+                  >
+                    Clear search
+                  </Link>
+                </>
+              )}
             </p>
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  href={
-                    searchTerm
-                      ? `/products?q=${encodeURIComponent(searchTerm)}`
-                      : '/products'
-                  }
-                  className="block rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                  style={
-                    !category
-                      ? { background: 'var(--navy-900)', color: '#fff' }
-                      : { color: 'var(--text-secondary)' }
-                  }
-                >
-                  All Products
-                </Link>
-              </li>
-              {categories.map((cat: any) => (
-                <li key={cat.id}>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-8 sm:flex-row">
+          {categories.length > 0 && (
+            <aside className="w-full sm:w-48 flex-shrink-0">
+              <p
+                className="mb-3 text-xs font-bold uppercase tracking-widest"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Category
+              </p>
+              <ul className="space-y-1">
+                <li>
                   <Link
                     href={
                       searchTerm
-                        ? `/products?category=${cat.slug}&q=${encodeURIComponent(searchTerm)}`
-                        : `/products?category=${cat.slug}`
+                        ? `/products?q=${encodeURIComponent(searchTerm)}`
+                        : '/products'
                     }
-                    className="block rounded-lg px-3 py-2 text-sm transition-colors"
+                    className="block rounded-lg px-3 py-2 text-sm font-medium transition-colors"
                     style={
-                      category === cat.slug
-                        ? {
-                            background: 'var(--navy-900)',
-                            color: '#fff',
-                            fontWeight: 600,
-                          }
+                      !category
+                        ? { background: 'var(--navy-900)', color: '#fff' }
                         : { color: 'var(--text-secondary)' }
                     }
                   >
-                    {cat.name}
-                    <span className="ml-1.5 text-xs opacity-60">
-                      ({cat._count.products})
-                    </span>
+                    All Products
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </aside>
-        )}
-
-        {/* Grid + pagination */}
-        <div className="flex-1">
-          {products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-              <Search
-                className="h-12 w-12 opacity-20"
-                style={{ color: 'var(--text-muted)' }}
-              />
-              <div>
-                <p
-                  className="text-base font-semibold"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  No products found
-                </p>
-                <p
-                  className="mt-1 text-sm"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {searchTerm
-                    ? `No results for "${searchTerm}". Try a different search term.`
-                    : 'No products in this category yet.'}
-                </p>
-              </div>
-              <Link
-                href="/products"
-                className="btn-navy rounded-lg px-5 py-2 text-sm font-semibold"
-              >
-                Browse all products
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                {products.map((product: any) => (
-                  <ProductCard
-                    key={product.id}
-                    id={product.id}
-                    name={product.name}
-                    slug={product.slug}
-                    price={product.price}
-                    compareAt={product.compareAt}
-                    image={product.images[0] ?? null}
-                    category={product.category?.name}
-                  />
+                {categories.map((cat: any) => (
+                  <li key={cat.id}>
+                    <Link
+                      href={
+                        searchTerm
+                          ? `/products?category=${cat.slug}&q=${encodeURIComponent(searchTerm)}`
+                          : `/products?category=${cat.slug}`
+                      }
+                      className="block rounded-lg px-3 py-2 text-sm transition-colors"
+                      style={
+                        category === cat.slug
+                          ? {
+                              background: 'var(--navy-900)',
+                              color: '#fff',
+                              fontWeight: 600,
+                            }
+                          : { color: 'var(--text-secondary)' }
+                      }
+                    >
+                      {cat.name}
+                      <span className="ml-1.5 text-xs opacity-60">
+                        ({cat._count.products})
+                      </span>
+                    </Link>
+                  </li>
                 ))}
-              </div>
-
-              {/* Pagination */}
-              <Suspense>
-                <Pagination totalPages={totalPages} currentPage={currentPage} />
-              </Suspense>
-            </>
+              </ul>
+            </aside>
           )}
+
+          <div className="flex-1">
+            {products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
+                <Search
+                  className="h-12 w-12 opacity-20"
+                  style={{ color: 'var(--text-muted)' }}
+                />
+                <div>
+                  <p
+                    className="text-base font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    No products found
+                  </p>
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    {searchTerm
+                      ? `No results for "${searchTerm}".`
+                      : 'No products in this category yet.'}
+                  </p>
+                </div>
+                <Link
+                  href="/products"
+                  className="btn-navy rounded-lg px-5 py-2 text-sm font-semibold"
+                >
+                  Browse all products
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                  {products.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      id={product.id}
+                      name={product.name}
+                      slug={product.slug}
+                      price={product.price}
+                      compareAt={product.compareAt}
+                      image={product.images[0] ?? null}
+                      category={product.category?.name}
+                    />
+                  ))}
+                </div>
+                <Suspense>
+                  <Pagination
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                  />
+                </Suspense>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

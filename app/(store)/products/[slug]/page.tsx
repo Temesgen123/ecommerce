@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import AddToCartButton from '@/components/store/AddToCartButton';
 import ProductImageGallery from '@/components/store/ProductImageGallery';
@@ -12,6 +13,8 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -19,10 +22,49 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
-export async function generateMetadata({ params }: Props) {
+// ── Rich metadata per product ─────────────────────────────────
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({ where: { slug } });
-  return product ? { title: product.name } : {};
+  const product = await prisma.product.findUnique({
+    where: { slug },
+    include: { category: { select: { name: true } } },
+  });
+
+  if (!product) return { title: 'Product Not Found' };
+
+  const title = product.name;
+  const description =
+    product.description ??
+    `Buy ${product.name} at MyStore. ${formatPrice(product.price)} — fast shipping, easy returns.`;
+  const image = product.images[0];
+  const url = `${baseUrl}/products/${slug}`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      product.name,
+      product.category?.name ?? '',
+      'buy online',
+      'free shipping',
+    ].filter(Boolean),
+    openGraph: {
+      type: 'website',
+      title: `${title} | MyStore`,
+      description,
+      url,
+      images: image
+        ? [{ url: image, width: 800, height: 800, alt: title }]
+        : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | MyStore`,
+      description,
+      images: image ? [image] : undefined,
+    },
+    alternates: { canonical: url },
+  };
 }
 
 export default async function ProductDetailPage({ params }: Props) {
@@ -58,162 +100,255 @@ export default async function ProductDetailPage({ params }: Props) {
         totalReviews
       : 0;
 
+  // ── JSON-LD structured data ────────────────────────────────
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description ?? undefined,
+    image: product.images,
+    sku: product.id.slice(0, 8).toUpperCase(),
+    url: `${baseUrl}/products/${slug}`,
+    brand: { '@type': 'Brand', name: 'MyStore' },
+    offers: {
+      '@type': 'Offer',
+      price: (product.price / 100).toFixed(2),
+      priceCurrency: 'USD',
+      availability:
+        product.stock > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+      url: `${baseUrl}/products/${slug}`,
+      seller: { '@type': 'Organization', name: 'MyStore' },
+    },
+    ...(totalReviews > 0 && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: avgRating.toFixed(1),
+        reviewCount: totalReviews,
+        bestRating: '5',
+        worstRating: '1',
+      },
+      review: reviews.slice(0, 5).map((r: any) => ({
+        '@type': 'Review',
+        author: { '@type': 'Person', name: r.authorName },
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: r.rating,
+          bestRating: 5,
+        },
+        reviewBody: r.body,
+        datePublished: r.createdAt.toISOString(),
+      })),
+    }),
+  };
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      {/* Product info */}
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        <ProductImageGallery
-          images={product.images}
-          productName={product.name}
-        />
+    <>
+      {/* Inject JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-        <div className="flex flex-col gap-5">
-          {product.category && (
-            <a
-              href={`/products?category=${product.category.slug}`}
-              className="text-xs font-bold uppercase tracking-widest"
-              style={{ color: 'var(--navy-600)' }}
-            >
-              {product.category.name}
-            </a>
-          )}
-
-          <h1
-            className="text-3xl font-extrabold tracking-tight"
-            style={{ color: 'var(--text-primary)' }}
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        {/* Breadcrumb */}
+        <nav
+          className="mb-6 flex items-center gap-2 text-xs"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          <a
+            href="/"
+            className="hover:underline"
+            style={{ color: 'var(--navy-700)' }}
           >
-            {product.name}
-          </h1>
-
-          {/* Inline rating */}
-          {totalReviews > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    style={{
-                      color:
-                        star <= Math.round(avgRating)
-                          ? '#F97316'
-                          : 'var(--border-base)',
-                    }}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                {avgRating.toFixed(1)} ({totalReviews} review
-                {totalReviews !== 1 ? 's' : ''})
-              </span>
-            </div>
+            Home
+          </a>
+          <span>/</span>
+          <a
+            href="/products"
+            className="hover:underline"
+            style={{ color: 'var(--navy-700)' }}
+          >
+            Products
+          </a>
+          {product.category && (
+            <>
+              <span>/</span>
+              <a
+                href={`/products?category=${product.category.slug}`}
+                className="hover:underline"
+                style={{ color: 'var(--navy-700)' }}
+              >
+                {product.category.name}
+              </a>
+            </>
           )}
+          <span>/</span>
+          <span style={{ color: 'var(--text-primary)' }}>{product.name}</span>
+        </nav>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-3">
-            <span
-              className="text-3xl font-bold"
-              style={{ color: 'var(--accent)' }}
-            >
-              {formatPrice(product.price)}
-            </span>
-            {product.compareAt && product.compareAt > product.price && (
-              <>
-                <span
-                  className="text-lg line-through"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {formatPrice(product.compareAt)}
-                </span>
-                <span
-                  className="rounded-full px-2.5 py-0.5 text-xs font-bold"
-                  style={{
-                    background: 'var(--error-bg)',
-                    color: 'var(--error-text)',
-                  }}
-                >
-                  SALE
-                </span>
-              </>
-            )}
-          </div>
-
-          {product.description && (
-            <p
-              className="text-sm leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {product.description}
-            </p>
-          )}
-
-          <p className="text-sm font-medium">
-            {product.stock > 0 ? (
-              <span style={{ color: 'var(--success-text)' }}>
-                ✓ In stock ({product.stock} available)
-              </span>
-            ) : (
-              <span style={{ color: 'var(--error-text)' }}>✕ Out of stock</span>
-            )}
-          </p>
-
-          <AddToCartButton
-            product={{
-              id: product.id,
-              name: product.name,
-              slug: product.slug,
-              price: product.price,
-              image,
-              stock: product.stock,
-            }}
+        {/* Product info */}
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          <ProductImageGallery
+            images={product.images}
+            productName={product.name}
           />
 
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            SKU: {product.id.slice(0, 8).toUpperCase()}
-          </p>
-        </div>
-      </div>
+          <div className="flex flex-col gap-5">
+            {product.category && (
+              <a
+                href={`/products?category=${product.category.slug}`}
+                className="text-xs font-bold uppercase tracking-widest"
+                style={{ color: 'var(--navy-600)' }}
+              >
+                {product.category.name}
+              </a>
+            )}
 
-      {/* Related products */}
-      <RelatedProducts productId={product.id} categoryId={product.categoryId} />
-
-      {/* Reviews section */}
-      <div className="mt-16 space-y-10">
-        <div style={{ borderTop: '2px solid var(--border-subtle)' }} />
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-          <div>
-            <h2
-              className="text-xl font-bold mb-6"
+            <h1
+              className="text-3xl font-extrabold tracking-tight"
               style={{ color: 'var(--text-primary)' }}
             >
-              Customer Reviews
-            </h2>
-            <ReviewList
-              reviews={reviews}
-              avgRating={avgRating}
-              total={totalReviews}
-            />
-          </div>
-          <div>
-            <h2
-              className="text-xl font-bold mb-6"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Write a Review
-            </h2>
-            <div
-              className="rounded-xl border p-6"
-              style={{
-                background: 'var(--bg-surface)',
-                borderColor: 'var(--border-subtle)',
+              {product.name}
+            </h1>
+
+            {totalReviews > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      style={{
+                        color:
+                          star <= Math.round(avgRating)
+                            ? '#F97316'
+                            : 'var(--border-base)',
+                      }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span
+                  className="text-sm"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  {avgRating.toFixed(1)} ({totalReviews} review
+                  {totalReviews !== 1 ? 's' : ''})
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-baseline gap-3">
+              <span
+                className="text-3xl font-bold"
+                style={{ color: 'var(--accent)' }}
+              >
+                {formatPrice(product.price)}
+              </span>
+              {product.compareAt && product.compareAt > product.price && (
+                <>
+                  <span
+                    className="text-lg line-through"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    {formatPrice(product.compareAt)}
+                  </span>
+                  <span
+                    className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+                    style={{
+                      background: 'var(--error-bg)',
+                      color: 'var(--error-text)',
+                    }}
+                  >
+                    SALE
+                  </span>
+                </>
+              )}
+            </div>
+
+            {product.description && (
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {product.description}
+              </p>
+            )}
+
+            <p className="text-sm font-medium">
+              {product.stock > 0 ? (
+                <span style={{ color: 'var(--success-text)' }}>
+                  ✓ In stock ({product.stock} available)
+                </span>
+              ) : (
+                <span style={{ color: 'var(--error-text)' }}>
+                  ✕ Out of stock
+                </span>
+              )}
+            </p>
+
+            <AddToCartButton
+              product={{
+                id: product.id,
+                name: product.name,
+                slug: product.slug,
+                price: product.price,
+                image,
+                stock: product.stock,
               }}
-            >
-              <ReviewForm productId={product.id} />
+            />
+
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              SKU: {product.id.slice(0, 8).toUpperCase()}
+            </p>
+          </div>
+        </div>
+
+        {/* Related products */}
+        <RelatedProducts
+          productId={product.id}
+          categoryId={product.categoryId}
+        />
+
+        {/* Reviews */}
+        <div className="mt-16 space-y-10">
+          <div style={{ borderTop: '2px solid var(--border-subtle)' }} />
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+            <div>
+              <h2
+                className="text-xl font-bold mb-6"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Customer Reviews
+              </h2>
+              <ReviewList
+                reviews={reviews}
+                avgRating={avgRating}
+                total={totalReviews}
+              />
+            </div>
+            <div>
+              <h2
+                className="text-xl font-bold mb-6"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Write a Review
+              </h2>
+              <div
+                className="rounded-xl border p-6"
+                style={{
+                  background: 'var(--bg-surface)',
+                  borderColor: 'var(--border-subtle)',
+                }}
+              >
+                <ReviewForm productId={product.id} />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
