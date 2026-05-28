@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import ProductCard from '@/components/store/ProductsCard';
+import ProductCard from '@/components/store/ProductCard';
 import SearchBar from '@/components/store/SearchBar';
 import Pagination from '@/components/store/Pagination';
 import { Search } from 'lucide-react';

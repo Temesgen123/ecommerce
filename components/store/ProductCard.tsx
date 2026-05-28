@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
+import WishlistButton from '@/components/store/WishlistButton';
 
 interface ProductCardProps {
   id: string;
@@ -56,6 +57,7 @@ export default function ProductCard({
         )}
       </Link>
 
+      {/* Sale badge */}
       {compareAt && compareAt > price && (
         <span
           className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-xs font-bold"
@@ -65,6 +67,27 @@ export default function ProductCard({
         </span>
       )}
 
+      {/* Wishlist button */}
+      <div className="absolute right-3 top-3">
+        <div
+          className="rounded-full p-1.5 shadow-sm"
+          style={{ background: 'rgba(255,255,255,0.9)' }}
+        >
+          <WishlistButton
+            item={{
+              id,
+              name,
+              slug,
+              price,
+              image: image ?? null,
+              category: category ?? null,
+            }}
+            size="sm"
+          />
+        </div>
+      </div>
+
+      {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
         {category && (
           <p

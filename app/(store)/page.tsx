@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
-import ProductCard from '@/components/store/ProductsCard';
+import ProductCard from '@/components/store/ProductCard';
 import CategoryCard from '@/components/store/CategoryCard';
 import { ArrowRight, Truck, Shield, RotateCcw, Headphones } from 'lucide-react';
 

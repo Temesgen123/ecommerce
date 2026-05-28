@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import ProductCard from '@/components/store/ProductsCard';
+import ProductCard from './ProductCard';
 
 interface RelatedProductsProps {
   productId: string;

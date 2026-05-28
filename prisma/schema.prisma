@@ -173,9 +173,52 @@ model ProductReview {
   authorEmail String
   approved    Boolean  @default(false)
   createdAt   DateTime @default(now())
+  verifiedPurchase Boolean @default(false)
   updatedAt   DateTime @updatedAt
-
   @@index([productId])
   @@index([approved])
   @@map("product_reviews")
+}
+
+model Customer {
+  id        String            @id @default(cuid())
+  email     String            @unique
+  password  String
+  name      String?
+  phone     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  addresses CustomerAddress[]
+  sessions  CustomerSession[]
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+model CustomerSession {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  token      String   @unique @default(cuid())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  @@index([token])
+  @@index([customerId])
+  @@map("customer_sessions")
 }
