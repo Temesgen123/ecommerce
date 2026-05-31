@@ -8,7 +8,11 @@ export const metadata: Metadata = {
   title: { template: '%s | MyStore', default: 'MyStore' },
 };
 
-export default async function StoreLayout({ children }: { children: React.ReactNode }) {
+export default async function StoreLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const customer = await getCustomer();
   return (
     <CartProvider>
@@ -20,4 +24,3 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     </CartProvider>
   );
 }
-

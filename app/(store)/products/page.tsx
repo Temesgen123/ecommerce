@@ -8,37 +8,36 @@ import Pagination from '@/components/store/Pagination';
 import { Search } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
-
-const PRODUCTS_PER_PAGE = 12;
+const PER_PAGE = 12;
 
 interface Props {
-  searchParams: Promise<{ category?: string; q?: string; page?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    q?: string;
+    page?: string;
+    sort?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  }>;
 }
 
 export async function generateMetadata({
   searchParams,
 }: Props): Promise<Metadata> {
   const { category, q } = await searchParams;
-
   let title = 'All Products';
-  let description =
-    'Browse thousands of products across electronics, apparel, home goods, and more.';
-
+  let description = 'Browse thousands of products at MyStore.';
   if (category) {
     const cat = await prisma.category.findUnique({ where: { slug: category } });
     if (cat) {
-      title = `${cat.name}`;
-      description =
-        cat.description ??
-        `Shop ${cat.name} at MyStore. Great prices and fast shipping.`;
+      title = cat.name;
+      description = cat.description ?? `Shop ${cat.name} at MyStore.`;
     }
   }
-
   if (q) {
     title = `Search: "${q}"`;
     description = `Search results for "${q}" at MyStore.`;
   }
-
   return {
     title,
     description,
@@ -47,25 +46,45 @@ export async function generateMetadata({
 }
 
 export default async function ProductsPage({ searchParams }: Props) {
-  const { category, q, page: pageParam } = await searchParams;
+  const {
+    category,
+    q,
+    page: pageParam,
+    sort,
+    minPrice,
+    maxPrice,
+  } = await searchParams;
 
   const searchTerm = q?.trim() ?? '';
   const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10));
-  const skip = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const skip = (currentPage - 1) * PER_PAGE;
 
-  const where = {
+  // Build orderBy from sort param
+  const orderBy: any =
+    sort === 'price-asc'
+      ? { price: 'asc' }
+      : sort === 'price-desc'
+        ? { price: 'desc' }
+        : sort === 'name-asc'
+          ? { name: 'asc' }
+          : sort === 'name-desc'
+            ? { name: 'desc' }
+            : { createdAt: 'desc' };
+
+  // Build price filter
+  const priceFilter: any = {};
+  if (minPrice) priceFilter.gte = Math.round(parseFloat(minPrice) * 100);
+  if (maxPrice) priceFilter.lte = Math.round(parseFloat(maxPrice) * 100);
+
+  const where: any = {
     published: true,
     ...(category ? { category: { slug: category } } : {}),
+    ...(Object.keys(priceFilter).length ? { price: priceFilter } : {}),
     ...(searchTerm
       ? {
           OR: [
-            { name: { contains: searchTerm, mode: 'insensitive' as const } },
-            {
-              description: {
-                contains: searchTerm,
-                mode: 'insensitive' as const,
-              },
-            },
+            { name: { contains: searchTerm, mode: 'insensitive' } },
+            { description: { contains: searchTerm, mode: 'insensitive' } },
           ],
         }
       : {}),
@@ -74,9 +93,9 @@ export default async function ProductsPage({ searchParams }: Props) {
   const [products, totalCount, categories] = await Promise.all([
     prisma.product.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       skip,
-      take: PRODUCTS_PER_PAGE,
+      take: PER_PAGE,
       include: { category: { select: { name: true, slug: true } } },
     }),
     prisma.product.count({ where }),
@@ -88,32 +107,33 @@ export default async function ProductsPage({ searchParams }: Props) {
     }),
   ]);
 
-  const totalPages = Math.ceil(totalCount / PRODUCTS_PER_PAGE);
+  const totalPages = Math.ceil(totalCount / PER_PAGE);
   const activeCategory = categories.find((c: any) => c.slug === category);
   const rangeStart = totalCount === 0 ? 0 : skip + 1;
-  const rangeEnd = Math.min(skip + PRODUCTS_PER_PAGE, totalCount);
+  const rangeEnd = Math.min(skip + PER_PAGE, totalCount);
 
   let heading = 'All Products';
   if (searchTerm && activeCategory)
-    heading = `"${searchTerm}" in ${activeCategory.name}`;
+    heading = `"${searchTerm}" in ${(activeCategory as any).name}`;
   else if (searchTerm) heading = `Results for "${searchTerm}"`;
   else if (activeCategory) heading = (activeCategory as any).name;
 
-  // JSON-LD for product listing
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: heading,
-    url: `${process.env.NEXTAUTH_URL ?? ''}/products${category ? `?category=${category}` : ''}`,
-  };
+  // Active filter tags
+  const activeFilters = [];
+  if (minPrice) activeFilters.push(`Min $${minPrice}`);
+  if (maxPrice) activeFilters.push(`Max $${maxPrice}`);
+  if (sort)
+    activeFilters.push(
+      {
+        'price-asc': 'Price ↑',
+        'price-desc': 'Price ↓',
+        'name-asc': 'A–Z',
+        'name-desc': 'Z–A',
+      }[sort] ?? sort,
+    );
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div className="mb-8">
           <Suspense>
@@ -133,24 +153,29 @@ export default async function ProductsPage({ searchParams }: Props) {
               {totalCount === 0
                 ? 'No products found'
                 : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} product${totalCount !== 1 ? 's' : ''}`}
-              {searchTerm && (
-                <>
-                  {' '}
-                  —{' '}
-                  <Link
-                    href={`/products${category ? `?category=${category}` : ''}`}
-                    className="underline hover:no-underline"
-                    style={{ color: 'var(--navy-700)' }}
-                  >
-                    Clear search
-                  </Link>
-                </>
-              )}
             </p>
           </div>
+          {/* Active filter badges */}
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {activeFilters.map((f) => (
+                <span
+                  key={f}
+                  className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={{
+                    background: 'var(--navy-50)',
+                    color: 'var(--navy-700)',
+                  }}
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-8 sm:flex-row">
+          {/* Sidebar */}
           {categories.length > 0 && (
             <aside className="w-full sm:w-48 flex-shrink-0">
               <p
@@ -180,11 +205,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                 {categories.map((cat: any) => (
                   <li key={cat.id}>
                     <Link
-                      href={
-                        searchTerm
-                          ? `/products?category=${cat.slug}&q=${encodeURIComponent(searchTerm)}`
-                          : `/products?category=${cat.slug}`
-                      }
+                      href={`/products?category=${cat.slug}${searchTerm ? `&q=${encodeURIComponent(searchTerm)}` : ''}${sort ? `&sort=${sort}` : ''}`}
                       className="block rounded-lg px-3 py-2 text-sm transition-colors"
                       style={
                         category === cat.slug
@@ -207,6 +228,7 @@ export default async function ProductsPage({ searchParams }: Props) {
             </aside>
           )}
 
+          {/* Grid */}
           <div className="flex-1">
             {products.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
@@ -214,27 +236,17 @@ export default async function ProductsPage({ searchParams }: Props) {
                   className="h-12 w-12 opacity-20"
                   style={{ color: 'var(--text-muted)' }}
                 />
-                <div>
-                  <p
-                    className="text-base font-semibold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    No products found
-                  </p>
-                  <p
-                    className="mt-1 text-sm"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    {searchTerm
-                      ? `No results for "${searchTerm}".`
-                      : 'No products in this category yet.'}
-                  </p>
-                </div>
+                <p
+                  className="text-base font-semibold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  No products found
+                </p>
                 <Link
                   href="/products"
                   className="btn-navy rounded-lg px-5 py-2 text-sm font-semibold"
                 >
-                  Browse all products
+                  Clear all filters
                 </Link>
               </div>
             ) : (
