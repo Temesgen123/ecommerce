@@ -13,6 +13,7 @@ import {
   Star,
   BarChart2,
   AlertTriangle,
+  Boxes,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -25,6 +26,11 @@ const navItems = [
   { label: 'Products', href: '/admin/products', icon: Package },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { label: 'Categories', href: '/admin/categories', icon: Tag },
+  {
+    label: 'Products (Bulk)',
+    href: '/admin/products-bulk',
+    icon: Boxes,
+  },
   { label: 'Discounts', href: '/admin/discounts', icon: Percent },
   { label: 'Reviews', href: '/admin/reviews', icon: Star },
   { label: 'Stock Alerts', href: '/admin/stock-alerts', icon: AlertTriangle },
