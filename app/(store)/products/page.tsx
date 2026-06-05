@@ -177,7 +177,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         <div className="flex flex-col gap-8 sm:flex-row">
           {/* Sidebar */}
           {categories.length > 0 && (
-            <aside className="w-full sm:w-48 flex-shrink-0">
+            <aside className="w-full sm:w-48 flex-shrink-0 bg-violet-700 p-2">
               <p
                 className="mb-3 text-xs font-bold uppercase tracking-widest"
                 style={{ color: 'var(--text-muted)' }}

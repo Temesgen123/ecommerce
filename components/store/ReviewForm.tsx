@@ -1,13 +1,21 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { submitReview, type ReviewFormState } from '@/app/actions/reviews';
 
 interface ReviewFormProps {
   productId: string;
+  customerEmail?: string | null;
+  customerName?: string | null;
+  isVerifiedBuyer?: boolean;
 }
 
-export default function ReviewForm({ productId }: ReviewFormProps) {
+export default function ReviewForm({
+  productId,
+  customerEmail,
+  customerName,
+  isVerifiedBuyer = false,
+}: ReviewFormProps) {
   const action = submitReview.bind(null, productId);
   const [state, formAction, isPending] = useActionState<
     ReviewFormState,
@@ -31,12 +39,40 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
         <p className="font-semibold" style={{ color: 'var(--success-text)' }}>
           {state.message}
         </p>
+        {isVerifiedBuyer && (
+          <p
+            className="text-xs mt-2"
+            style={{ color: 'var(--success-text)', opacity: 0.8 }}
+          >
+            ✓ Your review will be marked as a Verified Purchase.
+          </p>
+        )}
       </div>
     );
   }
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* Verified buyer badge */}
+      {isVerifiedBuyer && (
+        <div
+          className="flex items-center gap-2 rounded-lg px-3 py-2"
+          style={{
+            background: 'var(--success-bg)',
+            border: '1px solid rgba(22,163,74,0.2)',
+          }}
+        >
+          <span style={{ color: 'var(--success-text)' }}>✓</span>
+          <p
+            className="text-xs font-semibold"
+            style={{ color: 'var(--success-text)' }}
+          >
+            You purchased this product — your review will be marked as a
+            Verified Purchase.
+          </p>
+        </div>
+      )}
+
       {/* Star rating */}
       <div className="space-y-1">
         <label
@@ -54,7 +90,6 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
               onMouseEnter={() => setHovered(star)}
               onMouseLeave={() => setHovered(0)}
               className="text-2xl transition-transform hover:scale-110 focus:outline-none"
-              aria-label={`Rate ${star} star${star !== 1 ? 's' : ''}`}
             >
               <span
                 style={{
@@ -75,11 +110,6 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
             {err.rating[0]}
           </p>
         )}
-        {rating === 0 && state.errors && (
-          <p className="text-xs" style={{ color: 'var(--error-text)' }}>
-            Please select a rating.
-          </p>
-        )}
       </div>
 
       {/* Title */}
@@ -88,7 +118,10 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
           className="text-sm font-medium"
           style={{ color: 'var(--text-primary)' }}
         >
-          Title <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
+          Title{' '}
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            (optional)
+          </span>
         </label>
         <input
           name="title"
@@ -109,7 +142,7 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
         <textarea
           name="body"
           rows={4}
-          placeholder="Share your experience with this product…"
+          placeholder="Share your experience…"
           className="input-theme w-full px-3 py-2 text-sm resize-none"
         />
         {err.body && (
@@ -119,7 +152,7 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
         )}
       </div>
 
-      {/* Name + Email */}
+      {/* Name + Email — pre-filled if logged in */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <label
@@ -131,8 +164,11 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
           <input
             name="authorName"
             type="text"
+            defaultValue={customerName ?? ''}
             placeholder="Your name"
             className="input-theme w-full px-3 py-2 text-sm"
+            readOnly={!!customerName}
+            style={customerName ? { opacity: 0.7 } : {}}
           />
           {err.authorName && (
             <p className="text-xs" style={{ color: 'var(--error-text)' }}>
@@ -150,28 +186,24 @@ export default function ReviewForm({ productId }: ReviewFormProps) {
           <input
             name="authorEmail"
             type="email"
+            defaultValue={customerEmail ?? ''}
             placeholder="your@email.com"
             className="input-theme w-full px-3 py-2 text-sm"
+            readOnly={!!customerEmail}
+            style={customerEmail ? { opacity: 0.7 } : {}}
           />
           {err.authorEmail && (
             <p className="text-xs" style={{ color: 'var(--error-text)' }}>
               {err.authorEmail[0]}
             </p>
           )}
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Your email won't be displayed publicly.
-          </p>
+          {!customerEmail && (
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Not shown publicly.
+            </p>
+          )}
         </div>
       </div>
-
-      {state.message && !state.success && (
-        <p
-          className="text-sm rounded-lg px-3 py-2"
-          style={{ background: 'var(--error-bg)', color: 'var(--error-text)' }}
-        >
-          {state.message}
-        </p>
-      )}
 
       <button
         type="submit"

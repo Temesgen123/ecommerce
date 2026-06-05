@@ -1,19 +1,17 @@
 import { notFound } from 'next/navigation';
-import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import AddToCartButton from '@/components/store/AddToCartButton';
 import ProductImageGallery from '@/components/store/ProductImageGallery';
 import ReviewList from '@/components/store/ReviewList';
 import ReviewForm from '@/components/store/ReviewForm';
 import RelatedProducts from '@/components/store/RelatedProducts';
+import { getCustomer } from '@/lib/customer-auth';
 
 export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
-
-const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('en-US', {
@@ -22,72 +20,37 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
-// ── Rich metadata per product ─────────────────────────────────
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: { category: { select: { name: true } } },
-  });
-
-  if (!product) return { title: 'Product Not Found' };
-
-  const title = product.name;
-  const description =
-    product.description ??
-    `Buy ${product.name} at MyStore. ${formatPrice(product.price)} — fast shipping, easy returns.`;
-  const image = product.images[0];
-  const url = `${baseUrl}/products/${slug}`;
-
-  return {
-    title,
-    description,
-    keywords: [
-      product.name,
-      product.category?.name ?? '',
-      'buy online',
-      'free shipping',
-    ].filter(Boolean),
-    openGraph: {
-      type: 'website',
-      title: `${title} | MyStore`,
-      description,
-      url,
-      images: image
-        ? [{ url: image, width: 800, height: 800, alt: title }]
-        : undefined,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${title} | MyStore`,
-      description,
-      images: image ? [image] : undefined,
-    },
-    alternates: { canonical: url },
-  };
+  const product = await prisma.product.findUnique({ where: { slug } });
+  return product ? { title: product.name } : {};
 }
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  const product = await prisma.product.findUnique({
-    where: { slug, published: true },
-    include: {
-      category: { select: { name: true, slug: true } },
-      reviews: {
-        where: { approved: true },
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          rating: true,
-          title: true,
-          body: true,
-          authorName: true,
-          createdAt: true,
+  const [product, customer] = await Promise.all([
+    prisma.product.findUnique({
+      where: { slug, published: true },
+      include: {
+        category: { select: { name: true, slug: true } },
+        reviews: {
+          where: { approved: true },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            rating: true,
+            title: true,
+            body: true,
+            authorName: true,
+            createdAt: true,
+            verifiedPurchase: true,
+          },
         },
       },
-    },
-  });
+    }),
+    getCustomer(),
+  ]);
 
   if (!product) notFound();
 
@@ -100,242 +63,211 @@ export default async function ProductDetailPage({ params }: Props) {
         totalReviews
       : 0;
 
-  // ── JSON-LD structured data ────────────────────────────────
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name,
-    description: product.description ?? undefined,
-    image: product.images,
-    sku: product.id.slice(0, 8).toUpperCase(),
-    url: `${baseUrl}/products/${slug}`,
-    brand: { '@type': 'Brand', name: 'MyStore' },
-    offers: {
-      '@type': 'Offer',
-      price: (product.price / 100).toFixed(2),
-      priceCurrency: 'USD',
-      availability:
-        product.stock > 0
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/OutOfStock',
-      url: `${baseUrl}/products/${slug}`,
-      seller: { '@type': 'Organization', name: 'MyStore' },
-    },
-    ...(totalReviews > 0 && {
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: avgRating.toFixed(1),
-        reviewCount: totalReviews,
-        bestRating: '5',
-        worstRating: '1',
-      },
-      review: reviews.slice(0, 5).map((r: any) => ({
-        '@type': 'Review',
-        author: { '@type': 'Person', name: r.authorName },
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: r.rating,
-          bestRating: 5,
+  // Check if logged-in customer has purchased this product
+  let isVerifiedBuyer = false;
+  if (customer) {
+    const purchase = await prisma.orderItem.findFirst({
+      where: {
+        productId: product.id,
+        order: {
+          customerEmail: { equals: customer.email, mode: 'insensitive' },
+          status: { in: ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
         },
-        reviewBody: r.body,
-        datePublished: r.createdAt.toISOString(),
-      })),
-    }),
-  };
+      },
+    });
+    isVerifiedBuyer = !!purchase;
+  }
+
+  // Check if customer already reviewed
+  const alreadyReviewed = customer
+    ? !!(await prisma.productReview.findFirst({
+        where: { productId: product.id, authorEmail: customer.email },
+      }))
+    : false;
 
   return (
-    <>
-      {/* Inject JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        {/* Breadcrumb */}
-        <nav
-          className="mb-6 flex items-center gap-2 text-xs"
-          style={{ color: 'var(--text-muted)' }}
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* Breadcrumb */}
+      <nav
+        className="mb-6 flex items-center gap-2 text-xs"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        <a
+          href="/"
+          className="hover:underline"
+          style={{ color: 'var(--navy-700)' }}
         >
-          <a
-            href="/"
-            className="hover:underline"
-            style={{ color: 'var(--navy-700)' }}
-          >
-            Home
-          </a>
-          <span>/</span>
-          <a
-            href="/products"
-            className="hover:underline"
-            style={{ color: 'var(--navy-700)' }}
-          >
-            Products
-          </a>
-          {product.category && (
-            <>
-              <span>/</span>
-              <a
-                href={`/products?category=${product.category.slug}`}
-                className="hover:underline"
-                style={{ color: 'var(--navy-700)' }}
-              >
-                {product.category.name}
-              </a>
-            </>
-          )}
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{product.name}</span>
-        </nav>
-
-        {/* Product info */}
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-          <ProductImageGallery
-            images={product.images}
-            productName={product.name}
-          />
-
-          <div className="flex flex-col gap-5">
-            {product.category && (
-              <a
-                href={`/products?category=${product.category.slug}`}
-                className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: 'var(--navy-600)' }}
-              >
-                {product.category.name}
-              </a>
-            )}
-
-            <h1
-              className="text-3xl font-extrabold tracking-tight"
-              style={{ color: 'var(--text-primary)' }}
+          Home
+        </a>
+        <span>/</span>
+        <a
+          href="/products"
+          className="hover:underline"
+          style={{ color: 'var(--navy-700)' }}
+        >
+          Products
+        </a>
+        {product.category && (
+          <>
+            <span>/</span>
+            <a
+              href={`/products?category=${product.category.slug}`}
+              className="hover:underline"
+              style={{ color: 'var(--navy-700)' }}
             >
-              {product.name}
-            </h1>
+              {product.category.name}
+            </a>
+          </>
+        )}
+        <span>/</span>
+        <span style={{ color: 'var(--text-primary)' }}>{product.name}</span>
+      </nav>
 
-            {totalReviews > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span
-                      key={star}
-                      style={{
-                        color:
-                          star <= Math.round(avgRating)
-                            ? '#F97316'
-                            : 'var(--border-base)',
-                      }}
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
-                <span
-                  className="text-sm"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {avgRating.toFixed(1)} ({totalReviews} review
-                  {totalReviews !== 1 ? 's' : ''})
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-baseline gap-3">
-              <span
-                className="text-3xl font-bold"
-                style={{ color: 'var(--accent)' }}
-              >
-                {formatPrice(product.price)}
-              </span>
-              {product.compareAt && product.compareAt > product.price && (
-                <>
+      {/* Product info */}
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+        <ProductImageGallery
+          images={product.images}
+          productName={product.name}
+        />
+        <div className="flex flex-col gap-5">
+          {product.category && (
+            <a
+              href={`/products?category=${product.category.slug}`}
+              className="text-xs font-bold uppercase tracking-widest"
+              style={{ color: 'var(--navy-600)' }}
+            >
+              {product.category.name}
+            </a>
+          )}
+          <h1
+            className="text-3xl font-extrabold tracking-tight"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {product.name}
+          </h1>
+          {totalReviews > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((s) => (
                   <span
-                    className="text-lg line-through"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    {formatPrice(product.compareAt)}
-                  </span>
-                  <span
-                    className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+                    key={s}
                     style={{
-                      background: 'var(--error-bg)',
-                      color: 'var(--error-text)',
+                      color:
+                        s <= Math.round(avgRating)
+                          ? '#F97316'
+                          : 'var(--border-base)',
                     }}
                   >
-                    SALE
+                    ★
                   </span>
-                </>
-              )}
+                ))}
+              </div>
+              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                {avgRating.toFixed(1)} ({totalReviews} review
+                {totalReviews !== 1 ? 's' : ''})
+              </span>
             </div>
-
-            {product.description && (
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {product.description}
-              </p>
+          )}
+          <div className="flex items-baseline gap-3">
+            <span
+              className="text-3xl font-bold"
+              style={{ color: 'var(--accent)' }}
+            >
+              {formatPrice(product.price)}
+            </span>
+            {product.compareAt && product.compareAt > product.price && (
+              <>
+                <span
+                  className="text-lg line-through"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  {formatPrice(product.compareAt)}
+                </span>
+                <span
+                  className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+                  style={{
+                    background: 'var(--error-bg)',
+                    color: 'var(--error-text)',
+                  }}
+                >
+                  SALE
+                </span>
+              </>
             )}
-
-            <p className="text-sm font-medium">
-              {product.stock > 0 ? (
-                <span style={{ color: 'var(--success-text)' }}>
-                  ✓ In stock ({product.stock} available)
-                </span>
-              ) : (
-                <span style={{ color: 'var(--error-text)' }}>
-                  ✕ Out of stock
-                </span>
-              )}
-            </p>
-
-            <AddToCartButton
-              product={{
-                id: product.id,
-                name: product.name,
-                slug: product.slug,
-                price: product.price,
-                image,
-                stock: product.stock,
-              }}
-            />
-
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              SKU: {product.id.slice(0, 8).toUpperCase()}
-            </p>
           </div>
+          {product.description && (
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {product.description}
+            </p>
+          )}
+          <p className="text-sm font-medium">
+            {product.stock > 0 ? (
+              <span style={{ color: 'var(--success-text)' }}>
+                ✓ In stock ({product.stock} available)
+              </span>
+            ) : (
+              <span style={{ color: 'var(--error-text)' }}>✕ Out of stock</span>
+            )}
+          </p>
+          <AddToCartButton
+            product={{
+              id: product.id,
+              name: product.name,
+              slug: product.slug,
+              price: product.price,
+              image,
+              stock: product.stock,
+            }}
+          />
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            SKU: {product.id.slice(0, 8).toUpperCase()}
+          </p>
         </div>
+      </div>
 
-        {/* Related products */}
-        <RelatedProducts
-          productId={product.id}
-          categoryId={product.categoryId}
-        />
+      <RelatedProducts productId={product.id} categoryId={product.categoryId} />
 
-        {/* Reviews */}
-        <div className="mt-16 space-y-10">
-          <div style={{ borderTop: '2px solid var(--border-subtle)' }} />
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-            <div>
-              <h2
-                className="text-xl font-bold mb-6"
-                style={{ color: 'var(--text-primary)' }}
+      {/* Reviews */}
+      <div className="mt-16 space-y-10">
+        <div style={{ borderTop: '2px solid var(--border-subtle)' }} />
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+          <div>
+            <h2
+              className="text-xl font-bold mb-6"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Customer Reviews
+            </h2>
+            <ReviewList
+              reviews={reviews}
+              avgRating={avgRating}
+              total={totalReviews}
+            />
+          </div>
+          <div>
+            <h2
+              className="text-xl font-bold mb-6"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {alreadyReviewed ? 'You Already Reviewed This' : 'Write a Review'}
+            </h2>
+            {alreadyReviewed ? (
+              <div
+                className="rounded-xl border p-5 text-center"
+                style={{
+                  background: 'var(--bg-surface)',
+                  borderColor: 'var(--border-subtle)',
+                }}
               >
-                Customer Reviews
-              </h2>
-              <ReviewList
-                reviews={reviews}
-                avgRating={avgRating}
-                total={totalReviews}
-              />
-            </div>
-            <div>
-              <h2
-                className="text-xl font-bold mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Write a Review
-              </h2>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  You have already submitted a review for this product. Thank
+                  you!
+                </p>
+              </div>
+            ) : (
               <div
                 className="rounded-xl border p-6"
                 style={{
@@ -343,12 +275,17 @@ export default async function ProductDetailPage({ params }: Props) {
                   borderColor: 'var(--border-subtle)',
                 }}
               >
-                <ReviewForm productId={product.id} />
+                <ReviewForm
+                  productId={product.id}
+                  customerEmail={customer?.email ?? null}
+                  customerName={customer?.name ?? null}
+                  isVerifiedBuyer={isVerifiedBuyer}
+                />
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
