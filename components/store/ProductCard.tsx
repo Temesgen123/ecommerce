@@ -88,6 +88,7 @@ export default function ProductCard({
       </div>
 
       {/* Info */}
+      {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
         {category && (
           <p
@@ -104,32 +105,34 @@ export default function ProductCard({
         >
           {name}
         </Link>
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <div className="flex items-baseline gap-1.5">
-            <span
-              className="text-base font-bold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {formatPrice(price)}
-            </span>
-            {compareAt && compareAt > price && (
-              <span
-                className="text-xs line-through"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {formatPrice(compareAt)}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() =>
-              addItem({ id, name, slug, price, image: image ?? null })
-            }
-            className="btn-primary rounded-lg px-3 py-1.5 text-xs"
+
+        {/* Price row */}
+        <div className="mt-auto flex items-baseline gap-1.5 pt-2">
+          <span
+            className="text-base font-bold"
+            style={{ color: 'var(--text-primary)' }}
           >
-            Add to cart
-          </button>
+            {formatPrice(price)}
+          </span>
+          {compareAt && compareAt > price && (
+            <span
+              className="text-xs line-through"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {formatPrice(compareAt)}
+            </span>
+          )}
         </div>
+
+        {/* Button — full width on mobile, auto on desktop */}
+        <button
+          onClick={() =>
+            addItem({ id, name, slug, price, image: image ?? null })
+          }
+          className="btn-primary w-full rounded-lg py-2 text-xs font-semibold sm:w-auto sm:px-3 sm:py-1.5"
+        >
+          Add to cart
+        </button>
       </div>
     </div>
   );
