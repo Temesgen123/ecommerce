@@ -12,9 +12,9 @@ export default function Footer() {
     >
       {/* Main footer grid */}
       <div className="mx-auto max-w-6xl px-4 pt-12 pb-8 sm:px-6">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand + Newsletter combined column */}
-          <div className="lg:col-span-1">
+          <div className="col-span-2 lg:col-span-1">
             {/* Brand */}
             <div className="flex items-center gap-2 mb-3">
               <ShoppingBag
@@ -100,7 +100,7 @@ export default function Footer() {
           </div>
 
           {/* Help column */}
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <p className="text-xs font-bold uppercase tracking-widest mb-5 text-white">
               Help
             </p>
