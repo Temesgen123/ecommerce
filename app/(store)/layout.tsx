@@ -4,7 +4,7 @@ import Footer from '@/components/store/Footer';
 import CartProvider from '@/components/store/CartProvider';
 import { getCustomer } from '@/lib/customer-auth';
 
-import TawkTo from '@/components/TawkTo';
+import TawkTo from '@/components/store/TawkTo';
 
 export const metadata: Metadata = {
   title: { template: '%s | MyStore', default: 'MyStore' },
