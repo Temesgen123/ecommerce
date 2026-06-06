@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/store/ProductCard';
 import CategoryCard from '@/components/store/CategoryCard';
 import { ArrowRight, Truck, Shield, RotateCcw, Headphones } from 'lucide-react';
+import HeroCarousel from '@/components/store/HeroCarousel';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,45 +114,55 @@ export default async function HomePage() {
             className="absolute -top-20 left-1/2 -translate-x-1/2 h-80 w-80 rounded-full blur-3xl opacity-20"
             style={{ background: 'var(--accent)' }}
           />
-          <div className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
-            <div className="max-w-2xl">
-              <span
-                className="inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest mb-4"
-                style={{
-                  background: 'rgba(249,115,22,0.2)',
-                  color: 'var(--accent)',
-                }}
-              >
-                Free shipping on orders over $50
-              </span>
-              <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl leading-tight">
-                Everything you need,{' '}
-                <span style={{ color: 'var(--accent)' }}>delivered fast.</span>
-              </h1>
-              <p
-                className="mt-5 text-lg max-w-lg"
-                style={{ color: 'var(--navy-100)' }}
-              >
-                Thousands of products across every category. Great prices, fast
-                shipping, and hassle-free returns.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/products"
-                  className="btn-primary rounded-lg px-8 py-3.5 text-base font-bold inline-flex items-center gap-2"
-                >
-                  Shop Now <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/track-order"
-                  className="btn-ghost rounded-lg px-6 py-3.5 text-base font-semibold"
+          <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Left — text content */}
+              <div>
+                <span
+                  className="inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest mb-4"
                   style={{
-                    borderColor: 'rgba(255,255,255,0.2)',
-                    color: '#fff',
+                    background: 'rgba(249,115,22,0.2)',
+                    color: 'var(--accent)',
                   }}
                 >
-                  Track Order
-                </Link>
+                  Free shipping on orders over $50
+                </span>
+                <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl leading-tight">
+                  Everything you need,{' '}
+                  <span style={{ color: 'var(--accent)' }}>
+                    delivered fast.
+                  </span>
+                </h1>
+                <p
+                  className="mt-5 text-lg max-w-lg"
+                  style={{ color: 'var(--navy-100)' }}
+                >
+                  Thousands of products across every category. Great prices,
+                  fast shipping, and hassle-free returns.
+                </p>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Link
+                    href="/products"
+                    className="btn-primary rounded-lg px-8 py-3.5 text-base font-bold inline-flex items-center gap-2"
+                  >
+                    Shop Now <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="/track-order"
+                    className="btn-ghost rounded-lg px-6 py-3.5 text-base font-semibold"
+                    style={{
+                      borderColor: 'rgba(255,255,255,0.2)',
+                      color: '#fff',
+                    }}
+                  >
+                    Track Order
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right — promotional carousel */}
+              <div className="hidden lg:block h-72">
+                <HeroCarousel />
               </div>
             </div>
           </div>
