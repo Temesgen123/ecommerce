@@ -222,3 +222,10 @@ model CustomerSession {
   @@index([customerId])
   @@map("customer_sessions")
 }
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  subscribedAt DateTime @default(now())
+  active       Boolean  @default(true)
+}

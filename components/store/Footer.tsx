@@ -1,3 +1,5 @@
+import NewsletterForm from '@/components/store/NewsletterForm';
+
 export default function Footer() {
   return (
     <footer
@@ -19,6 +21,7 @@ export default function Footer() {
               Products
             </a>
           </div>
+          <NewsletterForm />
           <p className="text-xs" style={{ color: 'var(--navy-300, #5B8EC8)' }}>
             © {new Date().getFullYear()} MyStore. All rights reserved.
           </p>

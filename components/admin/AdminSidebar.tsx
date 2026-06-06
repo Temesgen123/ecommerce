@@ -14,6 +14,7 @@ import {
   BarChart2,
   AlertTriangle,
   Boxes,
+  Newspaper,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -34,6 +35,7 @@ const navItems = [
   { label: 'Discounts', href: '/admin/discounts', icon: Percent },
   { label: 'Reviews', href: '/admin/reviews', icon: Star },
   { label: 'Stock Alerts', href: '/admin/stock-alerts', icon: AlertTriangle },
+  { label: 'Newsletter', href: '/admin/newsletter', icon: Newspaper },
 ];
 
 export default function AdminSidebar({ user }: AdminSidebarProps) {
