@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import WishlistButton from '@/components/store/WishlistButton';
+import CompareButton from '@/components/store/CompareButton';
 
 interface ProductCardProps {
   id: string;
@@ -123,6 +124,19 @@ export default function ProductCard({
         >
           Add to cart
         </button>
+        <div className="flex justify-center pt-1">
+          <CompareButton
+            item={{
+              id,
+              name,
+              slug,
+              price,
+              compareAt,
+              image: image ?? null,
+              category: category ?? null,
+            }}
+          />
+        </div>
       </div>
     </div>
   );

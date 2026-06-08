@@ -5,6 +5,7 @@ import CartProvider from '@/components/store/CartProvider';
 import { getCustomer } from '@/lib/customer-auth';
 import { prisma } from '@/lib/prisma';
 import CrispChat from '@/components/Crisp';
+import CompareDrawer from '@/components/store/CompareDrawer';
 
 export const metadata: Metadata = {
   title: { template: '%s | MyStore', default: 'MyStore' },
@@ -34,6 +35,7 @@ export default async function StoreLayout({
         <Footer />
       </div>
       <CrispChat />
+      <CompareDrawer />
     </CartProvider>
   );
 }

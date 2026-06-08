@@ -6,6 +6,8 @@ import ReviewList from '@/components/store/ReviewList';
 import ReviewForm from '@/components/store/ReviewForm';
 import RelatedProducts from '@/components/store/RelatedProducts';
 import { getCustomer } from '@/lib/customer-auth';
+import TrackRecentlyViewed from '@/components/store/TrackRecentlyViewed';
+import RecentlyViewed from '@/components/store/RecentlyViewed';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,6 +124,17 @@ export default async function ProductDetailPage({ params }: Props) {
         <span>/</span>
         <span style={{ color: 'var(--text-primary)' }}>{product.name}</span>
       </nav>
+      <TrackRecentlyViewed
+        item={{
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          compareAt: product.compareAt,
+          image: product.images[0] ?? null,
+          category: product.category?.name ?? null,
+        }}
+      />
 
       {/* Product info */}
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
@@ -286,6 +299,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
+      <RecentlyViewed currentProductId={product.id} />
     </div>
   );
 }
