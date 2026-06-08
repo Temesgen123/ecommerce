@@ -61,6 +61,7 @@ model Product {
   orderItems  OrderItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  wishlists Wishlist[]
 
   @@index([slug])
   @@index([categoryId])
@@ -191,6 +192,7 @@ model Customer {
   addresses CustomerAddress[]
   sessions  CustomerSession[]
   @@map("customers")
+  wishlists Wishlist[]
 }
 
 model CustomerAddress {
@@ -228,4 +230,31 @@ model NewsletterSubscriber {
   email        String   @unique
   subscribedAt DateTime @default(now())
   active       Boolean  @default(true)
+}
+
+model Wishlist {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+  @@map("wishlists")
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published])
+  @@map("faqs")
 }

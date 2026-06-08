@@ -73,17 +73,7 @@ export default function ProductCard({
           className="rounded-full p-1.5 shadow-sm"
           style={{ background: 'rgba(255,255,255,0.9)' }}
         >
-          <WishlistButton
-            item={{
-              id,
-              name,
-              slug,
-              price,
-              image: image ?? null,
-              category: category ?? null,
-            }}
-            size="sm"
-          />
+          <WishlistButton productId={id} size="sm" />
         </div>
       </div>
 

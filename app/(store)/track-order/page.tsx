@@ -6,7 +6,7 @@ export const metadata = { title: 'Track Your Order' };
 
 export default function OrderTrackingPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 md:py-16">
       <div className="text-center mb-10">
         <h1
           className="text-3xl font-extrabold"

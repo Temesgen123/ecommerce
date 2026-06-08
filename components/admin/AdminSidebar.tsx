@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Boxes,
   Newspaper,
+  HelpCircle,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -36,6 +37,7 @@ const navItems = [
   { label: 'Reviews', href: '/admin/reviews', icon: Star },
   { label: 'Stock Alerts', href: '/admin/stock-alerts', icon: AlertTriangle },
   { label: 'Newsletter', href: '/admin/newsletter', icon: Newspaper },
+  { label: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
 ];
 
 export default function AdminSidebar({ user }: AdminSidebarProps) {

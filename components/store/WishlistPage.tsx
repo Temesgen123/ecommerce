@@ -1,10 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Heart, ShoppingBag, Trash2 } from 'lucide-react';
-import { useWishlistStore } from '@/lib/wishlist-store';
 import { useCartStore } from '@/lib/cart-store';
+import {
+  getWishlistItems,
+  clearWishlist,
+  toggleWishlistItem,
+} from '@/app/actions/wishlist';
+
+interface WishlistItem {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  image: string | null;
+  category: string | null;
+}
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('en-US', {
@@ -14,13 +27,41 @@ function formatPrice(cents: number) {
 }
 
 export default function WishlistPage() {
-  const { items, removeItem, clear } = useWishlistStore();
   const addToCart = useCartStore((s) => s.addItem);
-  const [mounted, setMounted] = useState(false);
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => setMounted(true), []);
+  // Load wishlist from database
+  useEffect(() => {
+    getWishlistItems().then((data) => {
+      setItems(data);
+      setLoading(false);
+    });
+  }, []);
 
-  if (!mounted) return null;
+  const handleRemove = (productId: string) => {
+    startTransition(async () => {
+      await toggleWishlistItem(productId);
+      setItems((prev) => prev.filter((i) => i.id !== productId));
+    });
+  };
+
+  const handleClear = () => {
+    if (!confirm('Clear your entire wishlist?')) return;
+    startTransition(async () => {
+      await clearWishlist();
+      setItems([]);
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-24 text-center">
+        <p style={{ color: 'var(--text-muted)' }}>Loading wishlist...</p>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -64,9 +105,8 @@ export default function WishlistPage() {
           </p>
         </div>
         <button
-          onClick={() => {
-            if (confirm('Clear your entire wishlist?')) clear();
-          }}
+          onClick={handleClear}
+          disabled={isPending}
           className="text-xs font-medium transition-colors hover:underline"
           style={{ color: 'var(--text-muted)' }}
         >
@@ -131,35 +171,28 @@ export default function WishlistPage() {
               {/* Actions */}
               <div className="mt-auto flex gap-2 pt-1">
                 <button
-                  onClick={() => {
+                  onClick={() =>
                     addToCart({
                       id: item.id,
                       name: item.name,
                       slug: item.slug,
                       price: item.price,
                       image: item.image,
-                    });
-                  }}
+                    })
+                  }
                   className="btn-primary flex-1 rounded-lg py-2 text-xs font-semibold flex items-center justify-center gap-1.5"
                 >
                   <ShoppingBag className="h-3.5 w-3.5" />
                   Add to Cart
                 </button>
                 <button
-                  onClick={() => removeItem(item.id)}
+                  onClick={() => handleRemove(item.id)}
+                  disabled={isPending}
                   className="rounded-lg p-2 transition-colors hover:bg-red-50"
                   style={{
                     border: '1px solid var(--border-base)',
                     color: 'var(--text-muted)',
                   }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLElement).style.color =
-                      'var(--error-text)')
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLElement).style.color =
-                      'var(--text-muted)')
-                  }
                   aria-label="Remove from wishlist"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -173,7 +206,7 @@ export default function WishlistPage() {
       {/* Move all to cart */}
       <div className="mt-8 flex justify-center">
         <button
-          onClick={() => {
+          onClick={() =>
             items.forEach((item) =>
               addToCart({
                 id: item.id,
@@ -182,8 +215,8 @@ export default function WishlistPage() {
                 price: item.price,
                 image: item.image,
               }),
-            );
-          }}
+            )
+          }
           className="btn-navy rounded-lg px-8 py-3 text-sm font-semibold inline-flex items-center gap-2"
         >
           <ShoppingBag className="h-4 w-4" />

@@ -1,38 +1,42 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Heart } from 'lucide-react';
-import { useWishlistStore, type WishlistItem } from '@/lib/wishlist-store';
+import { toggleWishlistItem } from '@/app/actions/wishlist';
 
 interface WishlistButtonProps {
-  item: WishlistItem;
+  productId: string;
+  initialSaved?: boolean;
   size?: 'sm' | 'md';
   showLabel?: boolean;
 }
 
 export default function WishlistButton({
-  item,
+  productId,
+  initialSaved = false,
   size = 'md',
   showLabel = false,
 }: WishlistButtonProps) {
-  const toggle = useWishlistStore((s) => s.toggle);
-  const hasItem = useWishlistStore((s) => s.hasItem);
-  const [mounted, setMounted] = useState(false);
-
-  // Avoid hydration mismatch — localStorage only exists client-side
-  useEffect(() => setMounted(true), []);
-
-  const saved = mounted && hasItem(item.id);
-
+  const [saved, setSaved] = useState(initialSaved);
+  const [isPending, startTransition] = useTransition();
   const iconSize = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    startTransition(async () => {
+      const result = await toggleWishlistItem(productId);
+      if (result && 'saved' in result) {
+        setSaved(!!result.saved);
+      }
+    });
+  };
 
   return (
     <button
-      onClick={(e) => {
-        e.preventDefault(); // don't navigate if inside a link
-        e.stopPropagation();
-        toggle(item);
-      }}
+      onClick={handleToggle}
+      disabled={isPending}
       aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'}
       className="flex items-center gap-1.5 rounded-lg transition-all"
       style={{ color: saved ? '#EF4444' : 'var(--text-muted)' }}
@@ -48,7 +52,7 @@ export default function WishlistButton({
       }
     >
       <Heart
-        className={iconSize}
+        className={`${iconSize} ${isPending ? 'opacity-50' : ''}`}
         style={{ fill: saved ? '#EF4444' : 'none', stroke: 'currentColor' }}
       />
       {showLabel && (

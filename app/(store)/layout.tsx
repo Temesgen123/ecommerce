@@ -3,8 +3,8 @@ import Navbar from '@/components/store/Navbar';
 import Footer from '@/components/store/Footer';
 import CartProvider from '@/components/store/CartProvider';
 import { getCustomer } from '@/lib/customer-auth';
-
-import Crisp from '@/components/Crisp';
+import { prisma } from '@/lib/prisma';
+import CrispChat from '@/components/Crisp';
 
 export const metadata: Metadata = {
   title: { template: '%s | MyStore', default: 'MyStore' },
@@ -16,14 +16,24 @@ export default async function StoreLayout({
   children: React.ReactNode;
 }) {
   const customer = await getCustomer();
+
+  const wishlistCount = customer
+    ? await prisma.wishlist.count({
+        where: { customerId: customer.id },
+      })
+    : 0;
+
   return (
     <CartProvider>
       <div className="flex min-h-screen flex-col">
-        <Navbar customerName={customer?.name ?? null} />
+        <Navbar
+          customerName={customer?.name ?? null}
+          wishlistCount={wishlistCount}
+        />
         <main className="flex-1">{children}</main>
         <Footer />
       </div>
-      <Crisp />
+      <CrispChat />
     </CartProvider>
   );
 }
