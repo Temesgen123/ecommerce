@@ -34,8 +34,10 @@ export default async function StoreLayout({
         <main className="flex-1">{children}</main>
         <Footer />
       </div>
-      <CrispChat />
-      <CompareDrawer />
+      <div className="flex gap-5">
+        <CrispChat />
+        <CompareDrawer />
+      </div>
     </CartProvider>
   );
 }

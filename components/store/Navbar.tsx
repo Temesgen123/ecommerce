@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ShoppingBag, Heart, User } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import { useEffect, useState } from 'react';
+import MobileMenu from '@/components/store/MobileMenu';
 
 interface NavbarProps {
   customerName?: string | null;
@@ -27,13 +28,17 @@ export default function Navbar({
       }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link
-          href="/"
-          className="text-xl font-bold tracking-tight"
-          style={{ color: '#fff' }}
-        >
-          My<span style={{ color: 'var(--accent)' }}>Store</span>
-        </Link>
+        {/* Left — hamburger + logo */}
+        <div className="flex items-center gap-2">
+          <MobileMenu customerName={customerName} />
+          <Link
+            href="/"
+            className="text-xl font-bold tracking-tight"
+            style={{ color: '#fff' }}
+          >
+            My<span style={{ color: 'var(--accent)' }}>Store</span>
+          </Link>
+        </div>
         <nav className="hidden sm:flex items-center gap-6">
           {[
             { href: '/products', label: 'Products' },
