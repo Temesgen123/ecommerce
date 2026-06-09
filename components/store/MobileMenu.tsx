@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Menu,
@@ -58,6 +58,9 @@ export default function MobileMenu({ customerName }: Props) {
   const totalItems = useCartStore((s) => s.totalItems());
 
   const close = () => setIsOpen(false);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -228,14 +231,15 @@ export default function MobileMenu({ customerName }: Props) {
               style={{ color: 'var(--navy-400)' }}
             />
             Cart
-            {totalItems > 0 && (
-              <span
-                className="ml-auto rounded-full px-2 py-0.5 text-xs font-bold"
-                style={{ background: 'var(--accent)', color: '#fff' }}
-              >
-                {totalItems}
-              </span>
-            )}
+            {mounted &&
+              totalItems > 0 && ( // ← add mounted check
+                <span
+                  className="ml-auto rounded-full px-2 py-0.5 text-xs font-bold"
+                  style={{ background: 'var(--accent)', color: '#fff' }}
+                >
+                  {totalItems}
+                </span>
+              )}
           </button>
         </div>
 

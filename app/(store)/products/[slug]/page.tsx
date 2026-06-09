@@ -8,7 +8,7 @@ import RelatedProducts from '@/components/store/RelatedProducts';
 import { getCustomer } from '@/lib/customer-auth';
 import TrackRecentlyViewed from '@/components/store/TrackRecentlyViewed';
 import RecentlyViewed from '@/components/store/RecentlyViewed';
-
+import { Metadata } from 'next';
 export const dynamic = 'force-dynamic';
 
 interface Props {
@@ -22,10 +22,68 @@ function formatPrice(cents: number) {
   }).format(cents / 100);
 }
 
-export async function generateMetadata({ params }: Props) {
+const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({ where: { slug } });
-  return product ? { title: product.name } : {};
+  const product = await prisma.product.findUnique({
+    where: { slug },
+    include: { category: { select: { name: true } } },
+  });
+
+  if (!product) return { title: 'Product Not Found' };
+
+  const price = (product.price / 100).toFixed(2);
+  const image = product.images[0] ?? null;
+  const title = `${product.name} | MyStore`;
+  const description = product.description
+    ? product.description.slice(0, 160)
+    : `Buy ${product.name} at MyStore. ${product.category?.name ? `Shop our ${product.category.name} collection.` : ''} Fast shipping, easy returns.`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      product.name,
+      product.category?.name ?? '',
+      'buy online',
+      'MyStore',
+      'free shipping',
+    ].filter(Boolean),
+    openGraph: {
+      type: 'website',
+      title,
+      description,
+      url: `${baseUrl}/products/${slug}`,
+      siteName: 'MyStore',
+      ...(image && {
+        images: [
+          {
+            url: image,
+            width: 800,
+            height: 800,
+            alt: product.name,
+          },
+        ],
+      }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(image && { images: [image] }),
+    },
+    alternates: {
+      canonical: `${baseUrl}/products/${slug}`,
+    },
+    other: {
+      'product:price:amount': price,
+      'product:price:currency': 'USD',
+      ...(product.stock > 0
+        ? { 'product:availability': 'in stock' }
+        : { 'product:availability': 'out of stock' }),
+    },
+  };
 }
 
 export default async function ProductDetailPage({ params }: Props) {
@@ -89,6 +147,114 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name,
+            description: product.description ?? undefined,
+            image: product.images,
+            sku: product.id.slice(0, 8).toUpperCase(),
+            url: `${baseUrl}/products/${product.slug}`,
+            brand: {
+              '@type': 'Brand',
+              name: 'MyStore',
+            },
+            ...(product.category && {
+              category: product.category.name,
+            }),
+            offers: {
+              '@type': 'Offer',
+              url: `${baseUrl}/products/${product.slug}`,
+              priceCurrency: 'USD',
+              price: (product.price / 100).toFixed(2),
+              availability:
+                product.stock > 0
+                  ? 'https://schema.org/InStock'
+                  : 'https://schema.org/OutOfStock',
+              seller: {
+                '@type': 'Organization',
+                name: 'MyStore',
+              },
+            },
+            ...(totalReviews > 0 && {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: avgRating.toFixed(1),
+                reviewCount: totalReviews,
+                bestRating: 5,
+                worstRating: 1,
+              },
+              review: reviews.slice(0, 5).map((r: any) => ({
+                '@type': 'Review',
+                reviewRating: {
+                  '@type': 'Rating',
+                  ratingValue: r.rating,
+                  bestRating: 5,
+                  worstRating: 1,
+                },
+                author: {
+                  '@type': 'Person',
+                  name: r.authorName,
+                },
+                reviewBody: r.body,
+                datePublished: r.createdAt.toISOString().slice(0, 10),
+              })),
+            }),
+          }),
+        }}
+      />
+
+      {/* Breadcrumb JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: baseUrl,
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Products',
+                item: `${baseUrl}/products`,
+              },
+              ...(product.category
+                ? [
+                    {
+                      '@type': 'ListItem',
+                      position: 3,
+                      name: product.category.name,
+                      item: `${baseUrl}/products?category=${product.category.slug}`,
+                    },
+                    {
+                      '@type': 'ListItem',
+                      position: 4,
+                      name: product.name,
+                      item: `${baseUrl}/products/${product.slug}`,
+                    },
+                  ]
+                : [
+                    {
+                      '@type': 'ListItem',
+                      position: 3,
+                      name: product.name,
+                      item: `${baseUrl}/products/${product.slug}`,
+                    },
+                  ]),
+            ],
+          }),
+        }}
+      />
       {/* Breadcrumb */}
       <nav
         className="mb-6 flex items-center gap-2 text-xs"

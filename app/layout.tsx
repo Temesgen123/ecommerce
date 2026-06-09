@@ -5,11 +5,15 @@ import './globals.css';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
+  display: 'swap',
+  preload: false, // ← prevents fetching at build time
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  display: 'swap',
+  preload: false, // ← prevents fetching at build time
 });
 
 const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
