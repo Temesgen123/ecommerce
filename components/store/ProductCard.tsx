@@ -45,6 +45,7 @@ export default function ProductCard({
         className="block aspect-square overflow-hidden relative"
         style={{ background: 'var(--bg-elevated)' }}
       >
+        // Replace the Image component with this:
         {image ? (
           <Image
             src={image}
@@ -56,6 +57,21 @@ export default function ProductCard({
             priority={priority}
             placeholder="blur"
             blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PC9zdmc+"
+            onError={(e) => {
+              // Hide broken image and show fallback
+              const target = e.currentTarget as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                parent.innerHTML = `
+          <div style="display:flex;height:100%;width:100%;align-items:center;justify-content:center;color:var(--text-muted)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+          </div>
+        `;
+              }
+            }}
           />
         ) : (
           <div
