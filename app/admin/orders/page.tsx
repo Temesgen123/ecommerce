@@ -9,6 +9,7 @@ import {
   type OrderStatus,
 } from '@/lib/order-utils';
 import { ShoppingBag } from 'lucide-react';
+import ExportOrdersButton from '@/components/admin/ExportOrdersButton';
 
 // export const dynamic = 'force-dynamic';
 
@@ -46,9 +47,15 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
-        <p className="text-sm text-gray-500">
-          {orders.length} order{orders.length !== 1 ? 's' : ''}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-gray-500">
+            {orders.length} order{orders.length !== 1 ? 's' : ''}
+          </p>
+          <ExportOrdersButton
+            status={activeStatus ?? undefined}
+            count={orders.length}
+          />
+        </div>
       </div>
 
       {/* Status filter tabs */}

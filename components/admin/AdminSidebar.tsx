@@ -16,6 +16,7 @@ import {
   Boxes,
   Newspaper,
   HelpCircle,
+  UserRound,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -36,10 +37,12 @@ const navItems = [
   { label: 'Discounts', href: '/admin/discounts', icon: Percent },
   { label: 'Reviews', href: '/admin/reviews', icon: Star },
   { label: 'Stock Alerts', href: '/admin/stock-alerts', icon: AlertTriangle },
+  { label: 'Customers', href: '/admin/customers', icon: UserRound },
   { label: 'Newsletter', href: '/admin/newsletter', icon: Newspaper },
   { label: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
 ];
 
+<Link href="/admin/customers">Customers</Link>;
 export default function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
 

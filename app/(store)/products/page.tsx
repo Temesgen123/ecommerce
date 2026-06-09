@@ -210,7 +210,7 @@ export default async function ProductsPage({ searchParams }: Props) {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                  {products.map((product: any) => (
+                  {products.map((product: any, index: number) => (
                     <ProductCard
                       key={product.id}
                       id={product.id}
@@ -220,6 +220,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                       compareAt={product.compareAt}
                       image={product.images[0] ?? null}
                       category={product.category?.name}
+                      priority={index < 4}
                     />
                   ))}
                 </div>

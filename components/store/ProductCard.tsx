@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import WishlistButton from '@/components/store/WishlistButton';
@@ -14,6 +15,7 @@ interface ProductCardProps {
   compareAt?: number | null;
   image?: string | null;
   category?: string | null;
+  priority?: boolean; // pass true for above-the-fold cards
 }
 
 function formatPrice(cents: number) {
@@ -31,6 +33,7 @@ export default function ProductCard({
   compareAt,
   image,
   category,
+  priority = false,
 }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
 
@@ -39,14 +42,20 @@ export default function ProductCard({
       {/* Image */}
       <Link
         href={`/products/${slug}`}
-        className="block aspect-square overflow-hidden"
+        className="block aspect-square overflow-hidden relative"
         style={{ background: 'var(--bg-elevated)' }}
       >
         {image ? (
-          <img
+          <Image
             src={image}
             alt={name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            loading={priority ? 'eager' : 'lazy'}
+            priority={priority}
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PC9zdmc+"
           />
         ) : (
           <div
@@ -78,7 +87,6 @@ export default function ProductCard({
         </div>
       </div>
 
-      {/* Info */}
       {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
         {category && (
@@ -115,7 +123,7 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Button — full width on mobile, auto on desktop */}
+        {/* Button */}
         <button
           onClick={() =>
             addItem({ id, name, slug, price, image: image ?? null })

@@ -330,7 +330,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {featured.map((product: any) => (
+              {featured.map((product: any, index: number) => (
                 <ProductCard
                   key={product.id}
                   id={product.id}
@@ -340,6 +340,7 @@ export default async function HomePage() {
                   compareAt={product.compareAt}
                   image={product.images[0] ?? null}
                   category={product.category?.name}
+                  priority={index < 4}
                 />
               ))}
             </div>
@@ -373,7 +374,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {newArrivals.map((product: any) => (
+              {newArrivals.map((product: any, index: number) => (
                 <ProductCard
                   key={product.id}
                   id={product.id}
@@ -383,6 +384,7 @@ export default async function HomePage() {
                   compareAt={product.compareAt}
                   image={product.images[0] ?? null}
                   category={product.category?.name}
+                  priority={index < 4}
                 />
               ))}
             </div>
