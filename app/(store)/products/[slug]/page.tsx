@@ -9,8 +9,9 @@ import { getCustomer } from '@/lib/customer-auth';
 import TrackRecentlyViewed from '@/components/store/TrackRecentlyViewed';
 import RecentlyViewed from '@/components/store/RecentlyViewed';
 import { Metadata } from 'next';
-export const dynamic = 'force-dynamic';
+import ShareButtons from '@/components/store/ShareButtons';
 
+export const dynamic = 'force-dynamic';
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -404,6 +405,13 @@ export default async function ProductDetailPage({ params }: Props) {
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
             SKU: {product.id.slice(0, 8).toUpperCase()}
           </p>
+
+          {/* Share buttons — add here */}
+          <ShareButtons
+            url={`${baseUrl}/products/${product.slug}`}
+            title={product.name}
+            price={formatPrice(product.price)}
+          />
         </div>
       </div>
 
