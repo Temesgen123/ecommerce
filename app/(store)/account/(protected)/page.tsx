@@ -1,7 +1,7 @@
 import { getCustomer } from '@/lib/customer-auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
-import { ShoppingBag, MapPin, Star } from 'lucide-react';
+import { ShoppingBag, MapPin, Star, Coins } from 'lucide-react';
 import ProfileForm from '@/components/store/ProfileForm';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'My Account' };
@@ -66,7 +66,7 @@ export default async function AccountPage() {
             href: '/account/orders',
           },
           {
-            icon: <Star className="h-5 w-5" />,
+            icon: <Coins className="h-5 w-5" />,
             label: 'Loyalty Points',
             value: loyaltyPoints.toLocaleString(),
             href: '/account/loyalty',

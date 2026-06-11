@@ -93,10 +93,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Empty cart' }, { status: 400 });
   }
 
+  // NEW — use Stripe's actual charged amounts
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const shippingCost = (session as any).shipping_cost?.amount_total ?? 0;
   const tax = session.total_details?.amount_tax ?? 0;
-  const total = subtotal + shippingCost + tax;
+  const discountAmount = session.total_details?.amount_discount ?? 0;
+  const total =
+    session.amount_total ?? subtotal + shippingCost + tax - discountAmount;
+
+  // Also save discount info on the order
+  const discountCode = session.metadata?.discountCode ?? null;
 
   const addr = (session as any).shipping_details?.address;
   const shippingAddress = addr
@@ -126,7 +132,9 @@ export async function POST(req: NextRequest) {
         subtotal,
         shippingCost,
         tax,
-        total,
+        discount: discountAmount, // ← add this
+        discountCode: discountCode, // ← add this
+        total, // ← now uses session.amount_total
         items: {
           create: cartItems.map((item) => ({
             quantity: item.quantity,
@@ -177,13 +185,13 @@ export async function POST(req: NextRequest) {
     console.log('✅ Stock decremented');
 
     // Increment discount code usage count
-    const discountCodeUsed = session.metadata?.discountCode;
-    if (discountCodeUsed) {
+    // const discountCodeUsed = session.metadata?.discountCode;
+    if (discountCode) {
       await prisma.discountCode.update({
-        where: { code: discountCodeUsed },
+        where: { code: discountCode },
         data: { usedCount: { increment: 1 } },
       });
-      console.log(`✅ Discount code usage incremented: ${discountCodeUsed}`);
+      console.log(`✅ Discount code usage incremented: ${discountCode}`);
     }
 
     // Check for low/out of stock products and alert admin
