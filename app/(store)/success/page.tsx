@@ -3,6 +3,7 @@ import { CheckCircle } from 'lucide-react';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import ClearCartOnSuccess from '@/components/store/ClearCartOnSuccess';
+import { calculatePointsEarned, formatPoints } from '@/lib/loyalty';
 
 interface Props {
   searchParams: Promise<{ session_id?: string }>;
@@ -132,7 +133,17 @@ export default async function SuccessPage({ searchParams }: Props) {
           </div>
         </div>
       )}
-
+      {order && (
+        <div
+          className="rounded-xl p-4 text-center mt-4"
+          style={{ background: '#D1FAE5', border: '1px solid #A7F3D0' }}
+        >
+          <p className="text-sm font-semibold" style={{ color: '#059669' }}>
+            🎉 You earned {formatPoints(calculatePointsEarned(order.total))}{' '}
+            loyalty points for this order!
+          </p>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
           href="/products"

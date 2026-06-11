@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Calendar,
 } from 'lucide-react';
+import AdminLoyaltyAdjust from '@/components/admin/AdminLoyaltyAdjust';
 
 export const metadata: Metadata = { title: 'Customer Detail' };
 
@@ -54,7 +55,6 @@ interface Props {
 
 export default async function CustomerDetailPage({ params }: Props) {
   const { id } = await params;
-
   const customer = await prisma.customer.findUnique({
     where: { id },
     include: {
@@ -67,6 +67,9 @@ export default async function CustomerDetailPage({ params }: Props) {
   });
 
   if (!customer) notFound();
+  const loyaltyAccount = await prisma.loyaltyAccount.findUnique({
+    where: { customerId: customer.id },
+  });
 
   // Get orders by email
   const orders = await prisma.order.findMany({
@@ -156,6 +159,25 @@ export default async function CustomerDetailPage({ params }: Props) {
                 <p className="text-sm font-medium text-gray-900">
                   {formatDate(customer.createdAt)}
                 </p>
+                {/* Loyalty Points */}
+                <div
+                  className="rounded-xl border bg-white p-5"
+                  style={{ borderColor: 'var(--border-subtle)' }}
+                >
+                  <h2 className="text-sm font-semibold text-gray-900 mb-3">
+                    Loyalty Points
+                  </h2>
+                  <p
+                    className="text-2xl font-bold mb-3"
+                    style={{ color: 'var(--navy-900)' }}
+                  >
+                    {(loyaltyAccount?.points ?? 0).toLocaleString()} pts
+                  </p>
+                  <AdminLoyaltyAdjust
+                    customerId={customer.id}
+                    currentPoints={loyaltyAccount?.points ?? 0}
+                  />
+                </div>
               </div>
             </div>
           </div>

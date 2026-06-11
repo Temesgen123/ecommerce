@@ -4,6 +4,7 @@ import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 import { sendLowStockAlert, LOW_STOCK_THRESHOLD } from '@/lib/stock-alert';
+import { awardPointsForOrder } from '@/app/actions/loyalty';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -140,6 +141,14 @@ export async function POST(req: NextRequest) {
     });
     console.log('✅ Order created:', order.id);
 
+    // After order is created, find the customer and award points
+    const customer = await prisma.customer.findFirst({
+      where: { email: session.customer_details?.email ?? '' },
+    });
+
+    if (customer) {
+      await awardPointsForOrder(customer.id, order.id, order.total);
+    }
     // Record initial PAID status in history
     await prisma.orderStatusHistory.create({
       data: { orderId: order.id, status: 'PAID' },
