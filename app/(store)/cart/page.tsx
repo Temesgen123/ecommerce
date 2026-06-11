@@ -35,7 +35,12 @@ export default function CartPage() {
 
   function handleCheckout() {
     startTransition(async () => {
-      await createCheckoutSession(items, appliedDiscount?.code ?? null);
+      await createCheckoutSession(
+        items,
+        undefined,
+        undefined,
+        appliedDiscount?.code ?? undefined,
+      );
     });
   }
 

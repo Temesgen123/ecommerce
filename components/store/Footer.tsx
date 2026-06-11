@@ -107,6 +107,7 @@ export default function Footer() {
             <ul className="space-y-3 mb-8">
               {[
                 { label: 'About Us', href: '/about' },
+                { label: 'Gift Cards', href: '/gift-cards' },
                 { label: 'Shipping Policy', href: '/shipping' },
                 { label: 'Returns Policy', href: '/returns' },
                 { label: 'Privacy Policy', href: '/privacy' },

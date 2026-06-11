@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 import { sendLowStockAlert, LOW_STOCK_THRESHOLD } from '@/lib/stock-alert';
 import { awardPointsForOrder } from '@/app/actions/loyalty';
+import { redeemGiftCard } from '@/app/actions/gift-cards';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -145,6 +146,15 @@ export async function POST(req: NextRequest) {
     const customer = await prisma.customer.findFirst({
       where: { email: session.customer_details?.email ?? '' },
     });
+
+    const giftCardCode = session.metadata?.giftCardCode;
+    const giftCardDiscount = parseInt(
+      session.metadata?.giftCardDiscount ?? '0',
+    );
+
+    if (giftCardCode && giftCardDiscount > 0) {
+      await redeemGiftCard(giftCardCode, giftCardDiscount, order.id);
+    }
 
     if (customer) {
       await awardPointsForOrder(customer.id, order.id, order.total);

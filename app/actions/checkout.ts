@@ -7,7 +7,9 @@ import type { CartItem } from '@/lib/cart-store';
 
 export async function createCheckoutSession(
   items: CartItem[],
-  discountCode: string | null = null,
+  giftCardCode?: string,
+  giftCardDiscount?: number,
+  discountCode?: string, // ← added to signature
 ) {
   if (!items || items.length === 0) throw new Error('Cart is empty.');
 
@@ -39,31 +41,40 @@ export async function createCheckoutSession(
 
   const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
-  // ── Handle discount code ──────────────────────────────────
-  let stripeDiscounts: { coupon: string }[] = [];
+  // ── Build single discounts array (Stripe only allows one) ──
+  const discounts: { coupon: string }[] = [];
 
+  // Priority: discount code takes precedence over gift card
   if (discountCode) {
     const dc = await prisma.discountCode.findUnique({
       where: { code: discountCode.toUpperCase().trim() },
     });
 
     if (dc && dc.active) {
-      // Create a one-time Stripe coupon matching our discount
       const coupon = await stripe.coupons.create({
-        name: `${dc.code}`,
+        name: dc.code,
         duration: 'once',
         ...(dc.type === 'PERCENTAGE'
           ? { percent_off: dc.value }
           : { amount_off: dc.value, currency: 'usd' }),
       });
-      stripeDiscounts = [{ coupon: coupon.id }];
+      discounts.push({ coupon: coupon.id });
     }
+  } else if (giftCardCode && giftCardDiscount && giftCardDiscount > 0) {
+    // Only apply gift card if no discount code
+    const coupon = await stripe.coupons.create({
+      amount_off: giftCardDiscount,
+      currency: 'usd',
+      name: `Gift Card: ${giftCardCode}`,
+      max_redemptions: 1,
+    });
+    discounts.push({ coupon: coupon.id });
   }
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: lineItems,
-    discounts: stripeDiscounts.length > 0 ? stripeDiscounts : undefined,
+    ...(discounts.length > 0 ? { discounts } : {}),
     success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/cart`,
     shipping_address_collection: {
@@ -104,6 +115,8 @@ export async function createCheckoutSession(
         })),
       ),
       discountCode: discountCode ?? '',
+      giftCardCode: giftCardCode ?? '',
+      giftCardDiscount: giftCardDiscount?.toString() ?? '0',
     },
   });
 

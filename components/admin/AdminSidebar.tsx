@@ -17,6 +17,7 @@ import {
   Newspaper,
   HelpCircle,
   UserRound,
+  CreditCard,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -38,6 +39,7 @@ const navItems = [
   { label: 'Reviews', href: '/admin/reviews', icon: Star },
   { label: 'Stock Alerts', href: '/admin/stock-alerts', icon: AlertTriangle },
   { label: 'Customers', href: '/admin/customers', icon: UserRound },
+  { label: 'Gift Cards', href: '/admin/gift-cards', icon: CreditCard },
   { label: 'Newsletter', href: '/admin/newsletter', icon: Newspaper },
   { label: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
 ];

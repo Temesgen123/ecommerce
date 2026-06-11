@@ -1,20 +1,20 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+//import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-  display: 'swap',
-  preload: false, // ← prevents fetching at build time
-});
+// const geistSans = Geist({
+//   variable: '--font-geist-sans',
+//   subsets: ['latin'],
+//   display: 'swap',
+//   preload: false, // ← prevents fetching at build time
+// });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-  display: 'swap',
-  preload: false, // ← prevents fetching at build time
-});
+// const geistMono = Geist_Mono({
+//   variable: '--font-geist-mono',
+//   subsets: ['latin'],
+//   display: 'swap',
+//   preload: false, // ← prevents fetching at build time
+// });
 
 const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
@@ -81,7 +81,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="antialiased"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
     >
