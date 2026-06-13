@@ -52,7 +52,8 @@ export default function ContactPage() {
                 Email
               </p>
               <a
-                href="mailto:support@mystore.com"
+                // href="mailto:support@mystore.com"
+                href="mailto:birechis@gmail.com"
                 className="text-sm hover:underline"
                 style={{ color: 'var(--navy-600)' }}
               >
