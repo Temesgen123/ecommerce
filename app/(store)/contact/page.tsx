@@ -56,7 +56,8 @@ export default function ContactPage() {
                 className="text-sm hover:underline"
                 style={{ color: 'var(--navy-600)' }}
               >
-                support@mystore.com
+                {/* support@mystore.com */}
+                birechis@gmail.com
               </a>
             </div>
           </div>

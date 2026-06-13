@@ -9,7 +9,7 @@ export async function createCheckoutSession(
   items: CartItem[],
   giftCardCode?: string,
   giftCardDiscount?: number,
-  discountCode?: string, // ← added to signature
+  discountCode?: string,
 ) {
   if (!items || items.length === 0) throw new Error('Cart is empty.');
 
@@ -41,32 +41,48 @@ export async function createCheckoutSession(
 
   const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
-  // ── Build single discounts array (Stripe only allows one) ──
-  const discounts: { coupon: string }[] = [];
+  // Calculate subtotal from DB prices
+  const subtotalCents = products.reduce((sum, product) => {
+    const item = items.find((i) => i.id === product.id)!;
+    return sum + product.price * item.quantity;
+  }, 0);
 
-  // Priority: discount code takes precedence over gift card
+  // ── Build single combined discount coupon ──
+  const discounts: { coupon: string }[] = [];
+  let totalDiscountCents = 0;
+  const couponParts: string[] = [];
+
+  // Add discount code amount
   if (discountCode) {
     const dc = await prisma.discountCode.findUnique({
       where: { code: discountCode.toUpperCase().trim() },
     });
 
     if (dc && dc.active) {
-      const coupon = await stripe.coupons.create({
-        name: dc.code,
-        duration: 'once',
-        ...(dc.type === 'PERCENTAGE'
-          ? { percent_off: dc.value }
-          : { amount_off: dc.value, currency: 'usd' }),
-      });
-      discounts.push({ coupon: coupon.id });
+      const dcAmount =
+        dc.type === 'PERCENTAGE'
+          ? Math.round(subtotalCents * (dc.value / 100))
+          : dc.value;
+      totalDiscountCents += dcAmount;
+      couponParts.push(dc.code);
     }
-  } else if (giftCardCode && giftCardDiscount && giftCardDiscount > 0) {
-    // Only apply gift card if no discount code
+  }
+
+  // Add gift card amount
+  if (giftCardCode && giftCardDiscount && giftCardDiscount > 0) {
+    totalDiscountCents += giftCardDiscount;
+    couponParts.push(`Gift Card: ${giftCardCode}`);
+  }
+
+  // Create a single combined coupon if any discount applies
+  if (totalDiscountCents > 0) {
+    // Cap discount at subtotal to avoid negative totals
+    const cappedDiscount = Math.min(totalDiscountCents, subtotalCents);
     const coupon = await stripe.coupons.create({
-      amount_off: giftCardDiscount,
+      amount_off: cappedDiscount,
       currency: 'usd',
-      name: `Gift Card: ${giftCardCode}`,
-      max_redemptions: 1,
+      name: couponParts.join(' + '),
+      duration: 'once',
     });
     discounts.push({ coupon: coupon.id });
   }

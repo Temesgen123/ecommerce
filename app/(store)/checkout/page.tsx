@@ -3,25 +3,55 @@
 import { useState, useTransition } from 'react';
 import { useCartStore } from '@/lib/cart-store';
 import { createCheckoutSession } from '@/app/actions/checkout';
+import { validateDiscountCode } from '@/app/actions/discounts';
 import { Loader2, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import GiftCardInput from '@/components/store/GiftyCardInput';
 
+interface AppliedDiscount {
+  id: string;
+  code: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  savings: number;
+}
+
 export default function CheckoutPage() {
   const items = useCartStore((s) => s.items);
   const [isPending, startTransition] = useTransition();
+  const [discountPending, startDiscountTransition] = useTransition();
 
   const [appliedGiftCard, setAppliedGiftCard] = useState<{
     code: string;
     discount: number;
   } | null>(null);
 
+  const [appliedDiscount, setAppliedDiscount] =
+    useState<AppliedDiscount | null>(null);
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountError, setDiscountError] = useState('');
+
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
   const giftCardDiscount = appliedGiftCard?.discount ?? 0;
-  const total = Math.max(0, subtotal - giftCardDiscount);
+  const discountSavings = appliedDiscount?.savings ?? 0;
+  const total = Math.max(0, subtotal - giftCardDiscount - discountSavings);
+
+  function handleApplyDiscount() {
+    if (!discountCode.trim()) return;
+    setDiscountError('');
+    startDiscountTransition(async () => {
+      const result = await validateDiscountCode(discountCode, subtotal);
+      if (result.valid && result.discount) {
+        setAppliedDiscount(result.discount);
+        setDiscountCode('');
+      } else {
+        setDiscountError(result.message ?? 'Invalid code.');
+      }
+    });
+  }
 
   if (items.length === 0) {
     return (
@@ -52,6 +82,7 @@ export default function CheckoutPage() {
         items,
         appliedGiftCard?.code ?? undefined,
         appliedGiftCard?.discount ?? undefined,
+        appliedDiscount?.code ?? undefined,
       );
     });
   }
@@ -95,7 +126,6 @@ export default function CheckoutPage() {
               Order Summary
             </h2>
 
-            {/* Items */}
             <div className="space-y-2">
               {items.map((item) => (
                 <div
@@ -119,7 +149,6 @@ export default function CheckoutPage() {
               className="pt-2 mt-2"
               style={{ borderTop: '1px solid var(--border-subtle)' }}
             >
-              {/* Subtotal */}
               <div className="flex justify-between text-sm mb-1">
                 <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
                 <span style={{ color: 'var(--text-primary)' }}>
@@ -127,7 +156,17 @@ export default function CheckoutPage() {
                 </span>
               </div>
 
-              {/* Gift card discount */}
+              {discountSavings > 0 && (
+                <div className="flex justify-between text-sm mb-1">
+                  <span style={{ color: '#059669' }}>
+                    Discount ({appliedDiscount?.code})
+                  </span>
+                  <span style={{ color: '#059669' }}>
+                    -${(discountSavings / 100).toFixed(2)}
+                  </span>
+                </div>
+              )}
+
               {giftCardDiscount > 0 && (
                 <div className="flex justify-between text-sm mb-1">
                   <span style={{ color: '#059669' }}>Gift Card</span>
@@ -137,7 +176,6 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {/* Total */}
               <div
                 className="flex justify-between font-bold text-base mt-2 pt-2"
                 style={{ borderTop: '1px solid var(--border-subtle)' }}
@@ -148,6 +186,73 @@ export default function CheckoutPage() {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Discount code */}
+          <div
+            className="rounded-xl p-5"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h2
+              className="text-sm font-semibold mb-3"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Discount Code
+            </h2>
+            {appliedDiscount ? (
+              <div
+                className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm"
+                style={{
+                  background: 'var(--success-bg)',
+                  border: '1px solid rgba(22,163,74,0.2)',
+                }}
+              >
+                <span style={{ color: 'var(--success-text)' }}>
+                  ✓ <strong>{appliedDiscount.code}</strong> applied
+                </span>
+                <button
+                  onClick={() => setAppliedDiscount(null)}
+                  className="text-xs underline ml-2"
+                  style={{ color: 'var(--success-text)' }}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={discountCode}
+                    onChange={(e) => {
+                      setDiscountCode(e.target.value.toUpperCase());
+                      setDiscountError('');
+                    }}
+                    onKeyDown={(e) =>
+                      e.key === 'Enter' && handleApplyDiscount()
+                    }
+                    placeholder="Enter discount code"
+                    className="input-theme flex-1 px-3 py-2 text-sm font-mono"
+                    disabled={discountPending}
+                  />
+                  <button
+                    onClick={handleApplyDiscount}
+                    disabled={discountPending || !discountCode.trim()}
+                    className="btn-navy rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                  >
+                    {discountPending ? '…' : 'Apply'}
+                  </button>
+                </div>
+                {discountError && (
+                  <p className="text-xs" style={{ color: 'var(--error-text)' }}>
+                    {discountError}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Gift card input */}
@@ -179,7 +284,8 @@ export default function CheckoutPage() {
           <div className="space-y-3">
             <button
               onClick={handleCheckout}
-              className="btn-primary w-full rounded-lg py-3.5 text-sm font-bold"
+              disabled={isPending}
+              className="btn-primary w-full rounded-lg py-3.5 text-sm font-bold disabled:opacity-60"
             >
               {total === 0
                 ? 'Complete Order (Free)'
