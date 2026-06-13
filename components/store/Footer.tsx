@@ -12,9 +12,9 @@ export default function Footer() {
     >
       {/* Main footer grid */}
       <div className="mx-auto max-w-6xl px-4 pt-12 pb-8 sm:px-6">
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-3 gap-6 sm:grid-cols-3 lg:grid-cols-4">
           {/* Brand + Newsletter combined column */}
-          <div className="col-span-2 lg:col-span-1">
+          <div className="col-span-3 lg:col-span-1">
             {/* Brand */}
             <div className="flex items-center gap-2 mb-3">
               <ShoppingBag
@@ -100,7 +100,7 @@ export default function Footer() {
           </div>
 
           {/* Help column */}
-          <div className="col-span-2 sm:col-span-1">
+          <div className="col-span-1 ">
             <p className="text-xs font-bold uppercase tracking-widest mb-5 text-white">
               Help
             </p>
@@ -125,30 +125,29 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-
-            {/* Payment */}
-            <div
-              className="rounded-lg p-3"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}
-            >
-              <p className="text-xs font-bold uppercase tracking-widest mb-2 text-white">
-                We Accept
-              </p>
-              <div className="flex items-center gap-2">
-                <CreditCard
-                  className="w-4 h-4"
-                  style={{ color: 'rgba(255,255,255,0.6)' }}
-                />
-                <span
-                  className="text-xs"
-                  style={{ color: 'rgba(255,255,255,0.6)' }}
-                >
-                  Visa · Mastercard · Amex
-                </span>
-              </div>
+          </div>
+          {/* Payment */}
+          <div
+            className="rounded-lg p-3 col-span-3 sm:col-span-1"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <p className="text-xs font-bold uppercase tracking-widest mb-2 text-white">
+              We Accept
+            </p>
+            <div className="flex items-center gap-2">
+              <CreditCard
+                className="w-4 h-4"
+                style={{ color: 'rgba(255,255,255,0.6)' }}
+              />
+              <span
+                className="text-xs"
+                style={{ color: 'rgba(255,255,255,0.6)' }}
+              >
+                Visa · Mastercard · Amex
+              </span>
             </div>
           </div>
         </div>
