@@ -16,7 +16,7 @@ async function syncToBrevo(email: string) {
       },
       body: JSON.stringify({
         email,
-        listIds: [2], // ← replace with your Brevo list ID
+        listIds: [3], // ← replace with your Brevo list ID
         updateEnabled: true,
       }),
     });
@@ -43,7 +43,7 @@ async function removeFromBrevo(email: string) {
           'api-key': process.env.BREVO_API_KEY ?? '',
         },
         body: JSON.stringify({
-          ids: [2], // ← replace with your Brevo list ID
+          ids: [3], // ← replace with your Brevo list ID
         }),
       },
     );
