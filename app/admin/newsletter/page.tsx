@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import { format } from 'date-fns';
 import { Users } from 'lucide-react';
+import ExportNewsletterButton from '../ExportNewsletterButton';
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Newsletter Subscribers' };
 
 export default async function NewsletterSubscribersPage() {
@@ -13,9 +15,12 @@ export default async function NewsletterSubscribersPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Users className="w-6 h-6" />
-        <h1 className="text-2xl font-bold">Newsletter Subscribers</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Users className="w-6 h-6" />
+          <h1 className="text-2xl font-bold">Newsletter Subscribers</h1>
+        </div>
+        <ExportNewsletterButton subscribers={subscribers} />
       </div>
 
       {/* Stats */}
