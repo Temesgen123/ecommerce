@@ -12,6 +12,7 @@ import {
   getCustomer,
 } from '@/lib/customer-auth';
 import { authLimiter } from '@/lib/ratelimit';
+import { sanitizedString, sanitizeEmail } from '@/lib/sanitize';
 
 export type AuthFormState = {
   errors?: Record<string, string[]>;
@@ -27,9 +28,10 @@ async function getClientIP(): Promise<string> {
 }
 
 const RegisterSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(64),
-  email: z.string().email('Valid email required'),
+  name: sanitizedString({ min: 1, max: 64, message: 'Name is required' }),
+  email: z.string().email('Valid email required').transform(sanitizeEmail),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  // ^ password is NOT sanitized — it gets hashed, never rendered, never stored as HTML
 });
 
 export async function registerCustomer(
@@ -181,13 +183,17 @@ export async function changePassword(
 }
 
 const AddressSchema = z.object({
-  name: z.string().min(1, 'Full name is required'),
-  line1: z.string().min(1, 'Address is required'),
-  line2: z.string().optional(),
-  city: z.string().min(1, 'City is required'),
-  state: z.string().min(1, 'State is required'),
-  postalCode: z.string().min(1, 'Postal code is required'),
-  country: z.string().min(1, 'Country is required'),
+  name: sanitizedString({ min: 1, message: 'Full name is required' }),
+  line1: sanitizedString({ min: 1, message: 'Address is required' }),
+  line2: sanitizedString({ min: 0, max: 200 }).optional(),
+  city: sanitizedString({ min: 1, message: 'City is required' }),
+  state: sanitizedString({ min: 1, message: 'State is required' }),
+  postalCode: sanitizedString({
+    min: 1,
+    max: 20,
+    message: 'Postal code is required',
+  }),
+  country: sanitizedString({ min: 1, message: 'Country is required' }),
   isDefault: z.coerce.boolean().optional(),
 });
 

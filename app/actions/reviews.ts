@@ -1,16 +1,34 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getCustomer } from '@/lib/customer-auth';
+import { contactLimiter } from '@/lib/ratelimit';
+import { sanitizeText, sanitizeEmail } from '@/lib/sanitize';
 
 const ReviewSchema = z.object({
   rating: z.coerce.number().int().min(1).max(5),
-  title: z.string().max(100).optional(),
-  body: z.string().min(10, 'Review must be at least 10 characters').max(1000),
-  authorName: z.string().min(1, 'Name is required').max(64),
-  authorEmail: z.string().email('Valid email required'),
+  title: z
+    .string()
+    .max(100)
+    .optional()
+    .transform((v) => (v ? sanitizeText(v) : v)),
+  body: z
+    .string()
+    .min(10, 'Review must be at least 10 characters')
+    .max(1000)
+    .transform(sanitizeText),
+  authorName: z
+    .string()
+    .min(1, 'Name is required')
+    .max(64)
+    .transform(sanitizeText),
+  authorEmail: z
+    .string()
+    .email('Valid email required')
+    .transform(sanitizeEmail),
 });
 
 export type ReviewFormState = {
@@ -19,11 +37,33 @@ export type ReviewFormState = {
   success?: boolean;
 };
 
+async function getClientIP(): Promise<string> {
+  const headersList = await headers();
+  const forwarded = headersList.get('x-forwarded-for');
+  const realIp = headersList.get('x-real-ip');
+  return forwarded?.split(',')[0].trim() ?? realIp ?? '127.0.0.1';
+}
+
 export async function submitReview(
   productId: string,
   _prev: ReviewFormState,
   formData: FormData,
 ): Promise<ReviewFormState> {
+  // ── Rate limit check ────────────────────────────────────
+  // Reuses contactLimiter (3/hour) — reviews don't need their own
+  // bucket, and this stops review-spam from a single IP regardless
+  // of how many different emails are used.
+  try {
+    const ip = await getClientIP();
+    const { success } = await contactLimiter.limit(ip);
+    if (!success) {
+      return { message: 'Too many submissions. Please try again in an hour.' };
+    }
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+  }
+  // ─────────────────────────────────────────────────────────
+
   const parsed = ReviewSchema.safeParse({
     rating: formData.get('rating'),
     title: formData.get('title') || undefined,

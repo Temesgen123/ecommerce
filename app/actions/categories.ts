@@ -3,10 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { sanitizedString } from '@/lib/sanitize';
 
 // ─── Validation ───────────────────────────────────────────────
 const CategorySchema = z.object({
-  name: z.string().min(1, 'Name is required').max(64),
+  name: sanitizedString({ min: 1, max: 64, message: 'Name is required' }),
   slug: z
     .string()
     .min(1, 'Slug is required')
@@ -15,7 +16,9 @@ const CategorySchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       'Slug must be lowercase with hyphens only',
     ),
-  description: z.string().max(256).optional(),
+  // slug intentionally NOT sanitized via sanitizedString — the regex
+  // above already restricts it to a safe character set
+  description: sanitizedString({ min: 0, max: 256 }).optional(),
 });
 
 export type CategoryFormState = {

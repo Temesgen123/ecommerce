@@ -4,9 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { sanitizedString } from '@/lib/sanitize';
 
 const ProductSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: sanitizedString({ min: 1, max: 200, message: 'Name is required' }),
   slug: z
     .string()
     .min(1, 'Slug is required')
@@ -14,7 +15,9 @@ const ProductSchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       'Slug must be lowercase with hyphens only',
     ),
-  description: z.string().optional(),
+  // slug intentionally NOT sanitized via sanitizedString — the regex
+  // above already restricts it to a safe character set
+  description: sanitizedString({ min: 0, max: 5000 }).optional(),
   price: z.coerce.number().min(0, 'Price must be a positive number'),
   compareAt: z.coerce.number().min(0).optional().nullable(),
   stock: z.coerce.number().int().min(0),
