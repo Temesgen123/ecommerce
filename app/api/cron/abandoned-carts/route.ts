@@ -6,7 +6,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const ABANDONED_AFTER_HOURS = 2;
+const ABANDONED_AFTER_HOURS = 25;
 const GIVE_UP_AFTER_HOURS = 72; // don't email carts older than 3 days — likely dead/test data
 
 function formatPrice(cents: number): string {
