@@ -6,6 +6,7 @@ import { sendOrderConfirmationEmail } from '@/lib/email';
 import { sendLowStockAlert, LOW_STOCK_THRESHOLD } from '@/lib/stock-alert';
 import { awardPointsForOrder } from '@/app/actions/loyalty';
 import { redeemGiftCard } from '@/app/actions/gift-cards';
+import { clearCart } from '@/app/actions/cart';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest) {
       },
       include: { items: true },
     });
+    await clearCart(session.customer_details?.email ?? 'unknown@example.com');
     console.log('✅ Order created:', order.id);
 
     // After order is created, find the customer and award points

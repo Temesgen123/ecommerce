@@ -80,6 +80,7 @@ model Product {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   wishlists Wishlist[]
+  cartItems   CartItem[]
 
   @@index([slug])
   @@index([categoryId])
@@ -195,6 +196,7 @@ model Customer {
   updatedAt DateTime          @updatedAt
   addresses CustomerAddress[]
   sessions  CustomerSession[]
+  cart      Cart?
   @@map("customers")
   wishlists Wishlist[]
 }
@@ -317,4 +319,37 @@ model GiftCardUsage {
 
   @@index([giftCardId])
   @@map("gift_card_usages")
+}
+
+// ─────────────────────────────────────────────
+// Cart (for abandoned cart tracking)
+// ─────────────────────────────────────────────
+
+model Cart {
+  id              String     @id @default(cuid())
+  customerId      String     @unique
+  customer        Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items           CartItem[]
+  reminderSentAt  DateTime?  // set once an abandoned-cart email is sent, prevents duplicates
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt // bumped on every item change — "abandoned" is measured against this
+
+  @@index([customerId])
+  @@index([updatedAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@map("cart_items")
 }
