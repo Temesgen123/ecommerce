@@ -1,28 +1,25 @@
 // ============================================================
 // lib/auth.ts
 // ============================================================
-// Central NextAuth configuration.
-// Import `authOptions` here and pass it to NextAuth() in the
-// route handler, and to getServerSession() in server components
-// or server actions.
-// ============================================================
 
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { authLimiter } from '@/lib/ratelimit';
+import { headers } from 'next/headers';
 
 export const authOptions: NextAuthOptions = {
   // ── Session ──────────────────────────────────────────────
   session: {
     strategy: 'jwt',
-    maxAge: 8 * 60 * 60, // 8 hours — reasonable for an admin session
+    maxAge: 8 * 60 * 60, // 8 hours
   },
 
   // ── Pages ────────────────────────────────────────────────
   pages: {
     signIn: '/admin/login',
-    error: '/admin/login', // error query param is appended automatically
+    error: '/api/auth/error',
   },
 
   // ── Providers ────────────────────────────────────────────
@@ -42,19 +39,37 @@ export const authOptions: NextAuthOptions = {
       },
 
       async authorize(credentials) {
-        // 1. Validate that both fields were supplied
+        // ── Rate limit check ──────────────────────────────────
+        try {
+          const headersList = await headers();
+          const forwarded = headersList.get('x-forwarded-for');
+          const realIp = headersList.get('x-real-ip');
+          const ip = forwarded?.split(',')[0].trim() ?? realIp ?? '127.0.0.1';
+
+          const { success } = await authLimiter.limit(ip);
+
+          if (!success) {
+            // NextAuth passes this string as ?error= in the redirect URL
+            // so the login page can show a specific message
+            throw new Error('TooManyRequests');
+          }
+        } catch (error) {
+          if (error instanceof Error && error.message === 'TooManyRequests') {
+            throw error; // re-throw — must reach NextAuth
+          }
+          // Redis down — fail open so admins aren't locked out
+          console.error('Rate limit check failed:', error);
+        }
+        // ─────────────────────────────────────────────────────
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email and password are required.');
         }
 
-        // 2. Look up the user by email
         const user = await prisma.user.findUnique({
           where: { email: credentials.email.toLowerCase().trim() },
         });
 
-        // 3. Use a constant-time comparison to avoid timing attacks.
-        //    Even if the user doesn't exist we run compare() so the
-        //    response time doesn't leak whether the email exists.
         const passwordMatches = user
           ? await compare(credentials.password, user.password)
           : await compare(
@@ -63,11 +78,9 @@ export const authOptions: NextAuthOptions = {
             );
 
         if (!user || !passwordMatches) {
-          // Generic message — don't reveal whether email or password was wrong
           throw new Error('Invalid email or password.');
         }
 
-        // 4. Return the fields that will be encoded into the JWT
         return {
           id: user.id,
           email: user.email,
@@ -80,7 +93,6 @@ export const authOptions: NextAuthOptions = {
 
   // ── Callbacks ────────────────────────────────────────────
   callbacks: {
-    // Persist custom fields (id, role) into the JWT token
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -89,7 +101,6 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
 
-    // Expose custom fields on the client-accessible session object
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
@@ -97,11 +108,11 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+
+    // signIn callback no longer needed for rate limiting
+    // but kept here if you need it for other purposes
   },
 
   // ── Security ─────────────────────────────────────────────
   secret: process.env.NEXTAUTH_SECRET,
-
-  // Uncomment to enable debug logs in development
-  // debug: process.env.NODE_ENV === "development",
 };

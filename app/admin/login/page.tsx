@@ -8,27 +8,45 @@ import { useRouter, useSearchParams } from 'next/navigation';
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+
+  const getInitialError = () => {
+    const error = params.get('error');
+    if (!error) return null;
+    if (error === 'TooManyRequests') {
+      return 'Too many login attempts. Please wait 15 minutes and try again.';
+    }
+    return 'Invalid email or password.';
+  };
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(
-    params.get('error') ? 'Invalid email or password.' : null,
-  );
+  const [error, setError] = useState<string | null>(getInitialError);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
     const result = await signIn('credentials', {
       email,
       password,
       redirect: false,
     });
+
     setLoading(false);
+
     if (result?.error) {
-      setError('Invalid email or password.');
+      if (result.error === 'TooManyRequests') {
+        setError(
+          'Too many login attempts. Please wait 15 minutes and try again.',
+        );
+      } else {
+        setError('Invalid email or password.');
+      }
       return;
     }
+
     router.push('/admin');
     router.refresh();
   }
