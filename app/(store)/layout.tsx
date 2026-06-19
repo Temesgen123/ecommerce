@@ -18,11 +18,15 @@ export default async function StoreLayout({
 }) {
   const customer = await getCustomer();
 
-  const wishlistCount = customer
-    ? await prisma.wishlist.count({
-        where: { customerId: customer.id },
-      })
-    : 0;
+  const [wishlistCount, categories] = await Promise.all([
+    customer
+      ? prisma.wishlist.count({ where: { customerId: customer.id } })
+      : Promise.resolve(0),
+    prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true },
+    }),
+  ]);
 
   return (
     <CartProvider>
@@ -30,6 +34,7 @@ export default async function StoreLayout({
         <Navbar
           customerName={customer?.name ?? null}
           wishlistCount={wishlistCount}
+          categories={categories}
         />
         <main className="flex-1">{children}</main>
         <Footer />

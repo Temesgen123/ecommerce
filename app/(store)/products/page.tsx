@@ -6,7 +6,7 @@ import ProductCard from '@/components/store/ProductCard';
 import SearchBar from '@/components/store/SearchBar';
 import Pagination from '@/components/store/Pagination';
 import { Search } from 'lucide-react';
-import CategorySidebar from '@/components/store/CategorySidebar';
+import CategoryTopBar from '@/components/store/CategoryTopBar';
 
 export const dynamic = 'force-dynamic';
 const PER_PAGE = 12;
@@ -142,6 +142,16 @@ export default async function ProductsPage({ searchParams }: Props) {
           </Suspense>
         </div>
 
+        {/* Category top bar — full width, above heading/grid */}
+        {categories.length > 0 && (
+          <CategoryTopBar
+            categories={categories}
+            category={category}
+            searchTerm={searchTerm}
+            sort={sort}
+          />
+        )}
+
         <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <div>
             <h1
@@ -175,65 +185,48 @@ export default async function ProductsPage({ searchParams }: Props) {
           )}
         </div>
 
-        <div className="flex flex-col gap-8 sm:flex-row">
-          {/* Sidebar */}
-          {categories.length > 0 && (
-            <CategorySidebar
-              categories={categories}
-              category={category}
-              searchTerm={searchTerm}
-              sort={sort}
+        {/* Grid — now full width, no sidebar flex wrapper needed */}
+        {products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
+            <Search
+              className="h-12 w-12 opacity-20"
+              style={{ color: 'var(--text-muted)' }}
             />
-          )}
-
-          {/* Grid */}
-          <div className="flex-1">
-            {products.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-                <Search
-                  className="h-12 w-12 opacity-20"
-                  style={{ color: 'var(--text-muted)' }}
-                />
-                <p
-                  className="text-base font-semibold"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  No products found
-                </p>
-                <Link
-                  href="/products"
-                  className="btn-navy rounded-lg px-5 py-2 text-sm font-semibold"
-                >
-                  Clear all filters
-                </Link>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                  {products.map((product: any, index: number) => (
-                    <ProductCard
-                      key={product.id}
-                      id={product.id}
-                      name={product.name}
-                      slug={product.slug}
-                      price={product.price}
-                      compareAt={product.compareAt}
-                      image={product.images[0] ?? null}
-                      category={product.category?.name}
-                      priority={index < 4}
-                    />
-                  ))}
-                </div>
-                <Suspense>
-                  <Pagination
-                    totalPages={totalPages}
-                    currentPage={currentPage}
-                  />
-                </Suspense>
-              </>
-            )}
+            <p
+              className="text-base font-semibold"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              No products found
+            </p>
+            <Link
+              href="/products"
+              className="btn-navy rounded-lg px-5 py-2 text-sm font-semibold"
+            >
+              Clear all filters
+            </Link>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {products.map((product: any, index: number) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  slug={product.slug}
+                  price={product.price}
+                  compareAt={product.compareAt}
+                  image={product.images[0] ?? null}
+                  category={product.category?.name}
+                  priority={index < 4}
+                />
+              ))}
+            </div>
+            <Suspense>
+              <Pagination totalPages={totalPages} currentPage={currentPage} />
+            </Suspense>
+          </>
+        )}
       </div>
     </>
   );

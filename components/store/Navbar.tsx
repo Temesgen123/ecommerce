@@ -1,23 +1,36 @@
 'use client';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ShoppingBag, Heart, User } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import { useEffect, useState } from 'react';
 import MobileMenu from '@/components/store/MobileMenu';
+import CategoryNavBar from '@/components/store/CategoryNavBar';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 interface NavbarProps {
   customerName?: string | null;
   wishlistCount?: number;
+  categories?: Category[];
 }
 
 export default function Navbar({
   customerName,
   wishlistCount = 0,
+  categories = [],
 }: NavbarProps) {
   const totalItems = useCartStore((s) => s.totalItems());
   const openCart = useCartStore((s) => s.openCart);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get('category') ?? undefined;
 
   return (
     <header
@@ -138,6 +151,14 @@ export default function Navbar({
           </button>
         </div>
       </div>
+
+      {/* Category navigation bar */}
+      {categories.length > 0 && (
+        <CategoryNavBar
+          categories={categories}
+          activeCategory={activeCategory}
+        />
+      )}
     </header>
   );
 }

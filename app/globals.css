@@ -229,3 +229,12 @@ hr,
 .animate-fade-up {
   animation: fadeUp 0.3s ease both;
 }
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox — also set inline above as a fallback */
+}
