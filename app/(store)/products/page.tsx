@@ -6,7 +6,6 @@ import ProductCard from '@/components/store/ProductCard';
 import SearchBar from '@/components/store/SearchBar';
 import Pagination from '@/components/store/Pagination';
 import { Search } from 'lucide-react';
-import CategoryTopBar from '@/components/store/CategoryTopBar';
 
 export const dynamic = 'force-dynamic';
 const PER_PAGE = 12;
@@ -60,7 +59,6 @@ export default async function ProductsPage({ searchParams }: Props) {
   const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10));
   const skip = (currentPage - 1) * PER_PAGE;
 
-  // Build orderBy from sort param
   const orderBy: any =
     sort === 'price-asc'
       ? { price: 'asc' }
@@ -72,7 +70,6 @@ export default async function ProductsPage({ searchParams }: Props) {
             ? { name: 'desc' }
             : { createdAt: 'desc' };
 
-  // Build price filter
   const priceFilter: any = {};
   if (minPrice) priceFilter.gte = Math.round(parseFloat(minPrice) * 100);
   if (maxPrice) priceFilter.lte = Math.round(parseFloat(maxPrice) * 100);
@@ -119,7 +116,6 @@ export default async function ProductsPage({ searchParams }: Props) {
   else if (searchTerm) heading = `Results for "${searchTerm}"`;
   else if (activeCategory) heading = (activeCategory as any).name;
 
-  // Active filter tags
   const activeFilters = [];
   if (minPrice) activeFilters.push(`Min $${minPrice}`);
   if (maxPrice) activeFilters.push(`Max $${maxPrice}`);
@@ -142,16 +138,6 @@ export default async function ProductsPage({ searchParams }: Props) {
           </Suspense>
         </div>
 
-        {/* Category top bar — full width, above heading/grid */}
-        {categories.length > 0 && (
-          <CategoryTopBar
-            categories={categories}
-            category={category}
-            searchTerm={searchTerm}
-            sort={sort}
-          />
-        )}
-
         <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <div>
             <h1
@@ -166,7 +152,6 @@ export default async function ProductsPage({ searchParams }: Props) {
                 : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} product${totalCount !== 1 ? 's' : ''}`}
             </p>
           </div>
-          {/* Active filter badges */}
           {activeFilters.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {activeFilters.map((f) => (
@@ -185,7 +170,6 @@ export default async function ProductsPage({ searchParams }: Props) {
           )}
         </div>
 
-        {/* Grid — now full width, no sidebar flex wrapper needed */}
         {products.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
             <Search

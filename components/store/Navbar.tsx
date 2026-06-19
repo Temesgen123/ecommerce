@@ -6,6 +6,7 @@ import { useCartStore } from '@/lib/cart-store';
 import { useEffect, useState } from 'react';
 import MobileMenu from '@/components/store/MobileMenu';
 import CategoryNavBar from '@/components/store/CategoryNavBar';
+import NavSearchBar from '@/components/store/NavSearchBar';
 
 interface Category {
   id: string;
@@ -40,9 +41,9 @@ export default function Navbar({
         borderBottom: '1px solid var(--navy-800)',
       }}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         {/* Left — hamburger + logo */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <MobileMenu customerName={customerName} />
           <Link
             href="/"
@@ -52,7 +53,15 @@ export default function Navbar({
             My<span style={{ color: 'var(--accent)' }}>Store</span>
           </Link>
         </div>
-        <nav className="hidden sm:flex items-center gap-6">
+
+        {/* Center — search (hidden on smallest screens, MobileMenu covers that) */}
+        <div className="hidden flex-1 justify-center sm:flex">
+          <div className="w-full max-w-md">
+            <NavSearchBar />
+          </div>
+        </div>
+
+        <nav className="hidden lg:flex items-center gap-6 flex-shrink-0">
           {[
             { href: '/products', label: 'Products' },
             { href: '/track-order', label: 'Track Order' },
@@ -74,7 +83,8 @@ export default function Navbar({
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-1">
+
+        <div className="flex items-center gap-1 flex-shrink-0">
           <Link
             href={customerName ? '/account' : '/account/login'}
             className="relative rounded-lg p-2 transition-colors flex items-center gap-1.5"
@@ -150,6 +160,11 @@ export default function Navbar({
             )}
           </button>
         </div>
+      </div>
+
+      {/* Mobile search — full width, below main row, sm breakpoint and down */}
+      <div className="px-4 pb-3 sm:hidden">
+        <NavSearchBar />
       </div>
 
       {/* Category navigation bar */}
