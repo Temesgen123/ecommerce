@@ -15,14 +15,14 @@
   --navy-50: #eef5fc; */
 
   /* 1. Forest & Clay (most recommended) */
-  --navy-900: #1e3d2f;
+  /* --navy-900: #1e3d2f;
   --navy-800: #2a5240;
   --navy-700: #356752;
   --navy-600: #4a8068;
   --navy-500: #5e9a7e;
   --navy-100: #e3eee8;
   --navy-50: #f1f7f3;
-  --accent: #d97a4e;
+  --accent: #d97a4e; */
 
   /*2. Charcoal & Amber*/
   /* --navy-900: #262b33;
@@ -63,6 +63,56 @@
   --navy-100: #f3e2e6;
   --navy-50: #f9eef0;
   --accent: #d4a017; */
+
+  /* 6. True Trust Blue (The Retail Gold Standard) */
+  --navy-900: #0434a5; /* Deep Slate Blue */
+  --navy-800: #1e293b;
+  --navy-700: #334155;
+  --navy-600: #475569;
+  --navy-500: #64748b; /* Mid-tone Slate Blue */
+  --navy-100: #f1f5f9; /* Cool light gray-blue background tint */
+  --navy-50: #f8fafc; /* Crisp off-white background */
+  --accent: #f97316; /* High-conversion Vibrant Orange */
+
+  /* 7. Sophesticated Slate Gold */
+  /*--navy-900: #18181b; /* Charcoal/Off-Black */
+  /* --navy-800: #27272a;
+  --navy-700: #3f3f46;
+  --navy-600: #52525b;
+  --navy-500: #71717a; /* Neutral Muted Gray */
+  /* --navy-100: #f4f4f5; /* Clean light gray */
+  /* --navy-50: #fafafa; /* Bright neutral background */
+  /*--accent: #eab308; /* Premium Gold/Yellow Amber */
+
+  /* 8. Deep Deep Indigo */
+  /* --navy-900: #1e1b4b; /* Deep Deep Indigo */
+  /* --navy-800: #312e81;
+  --navy-700: #3730a3;
+  --navy-600: #4338ca;
+  --navy-500: #4f46e5; /* Classic Indigo */
+  /* --navy-100: #e0e7ff; /* Soft indigo-tinted light gray */
+  /*--navy-50: #f5f7ff; /* Clean canvas background */
+  /*--accent: #f43f5e; /* Energetic Coral/Rose Accent */
+
+  /* Deep Classic Navy */
+  /*--navy-900: #0a192f; /* Deep Classic Navy */
+  /*--navy-800: #172a45;
+  --navy-700: #30475e;
+  --navy-600: #4f6d7a;
+  --navy-500: #0056b3; /* True Royal Blue */
+  /*--navy-100: #eef2f7; /* Soft cool background */
+  /*--navy-50: #f8f9fa; /* Standard ultra-light retail background */
+  /*--accent: #dc3545; /* High-visibility Crimson Red */
+
+  /* Refine Teal and Deep Amber */
+  /*--navy-900: #042f2e; /* Deep Deep Teal */
+  /*--navy-800: #115e59;
+  --navy-700: #134e4a;
+  --navy-600: #0d9488;
+  --navy-500: #14b8a6; /* Vibrant Teal */
+  /* --navy-100: #f0fdfa; /* Fresh minty-white background tint */
+  /* --navy-50: #fbfdfd; /* Ultra-clean canvas */
+  /* --accent: #f59e0b; /* Warm Amber Orange */
 
   /* --navy-900: #7f00ff;
   --navy-800: #7c3aed;
