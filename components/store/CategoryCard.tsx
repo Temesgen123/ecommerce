@@ -1,18 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface CategoryCardProps {
   name: string;
   slug: string;
-  icon: string;
+  image: string;
   count: number;
 }
 
 export default function CategoryCard({
   name,
   slug,
-  icon,
+  image,
   count,
 }: CategoryCardProps) {
   return (
@@ -33,7 +34,15 @@ export default function CategoryCard({
         (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface)';
       }}
     >
-      <span className="text-3xl">{icon}</span>
+      <div className="relative h-16 w-16 overflow-hidden rounded-lg">
+        <Image
+          src={image}
+          alt={name}
+          fill
+          sizes="64px"
+          className="object-cover transition-transform group-hover:scale-105"
+        />
+      </div>
       <div>
         <p
           className="text-sm font-semibold"

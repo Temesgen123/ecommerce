@@ -25,31 +25,60 @@ export const metadata: Metadata = {
   alternates: { canonical: baseUrl },
 };
 
-const CATEGORY_ICONS: Record<string, string> = {
-  electronics: '📱',
-  computers: '💻',
-  smartphones: '📲',
-  apparel: '👗',
-  shoes: '👟',
-  accessories: '👜',
-  'home-goods': '🏠',
-  kitchen: '🍳',
-  books: '📚',
-  'sports-outdoors': '⚽',
-  'toys-games': '🎮',
-  beauty: '💄',
-  'tools-diy': '🔧',
-  'pet-supplies': '🐾',
-  gaming: '🕹️',
-  garden: '🌿',
-  'health-pharmacy': '💊',
-  'health-wellness': '🧘',
-  'musical-instruments': '🎸',
-  'travel-luggage': '🧳',
-  'office-supplies': '📋',
-  'baby-kids': '🍼',
-  'auto-parts-accessories': '🚗',
+// Replace each URL below with the corresponding value from
+// prisma/category-images.json after running fetch-category-images.ts.
+// Format: cloud_name comes from your own Cloudinary account.
+const CATEGORY_IMAGES: Record<string, string> = {
+  electronics:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/electronics.jpg',
+  computers:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/computers.jpg',
+  smartphones:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/smartphones.jpg',
+  apparel:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/apparel.jpg',
+  shoes:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/shoes.jpg',
+  accessories:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/accessories.jpg',
+  'home-goods':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/home-goods.jpg',
+  kitchen:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/kitchen.jpg',
+  books:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/books.jpg',
+  'sports-outdoors':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/sports-outdoors.jpg',
+  'toys-games':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/toys-games.jpg',
+  beauty:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/beauty.jpg',
+  'tools-diy':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/tools-diy.jpg',
+  'pet-supplies':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/pet-supplies.jpg',
+  gaming:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/gaming.jpg',
+  garden:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/garden.jpg',
+  'health-pharmacy':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/health-pharmacy.jpg',
+  'health-wellness':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/health-wellness.jpg',
+  'musical-instruments':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/musical-instruments.jpg',
+  'travel-luggage':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/travel-luggage.jpg',
+  'office-supplies':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/office-supplies.jpg',
+  'baby-kids':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/baby-kids.jpg',
+  'auto-parts-accessories':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/auto-parts-accessories.jpg',
 };
+
+const FALLBACK_IMAGE =
+  'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/fallback.jpg';
 
 export default async function HomePage() {
   const [featured, newArrivals, categories] = await Promise.all([
@@ -261,7 +290,7 @@ export default async function HomePage() {
                   key={cat.id}
                   name={cat.name}
                   slug={cat.slug}
-                  icon={CATEGORY_ICONS[cat.slug] ?? '🛍️'}
+                  image={CATEGORY_IMAGES[cat.slug] ?? FALLBACK_IMAGE}
                   count={cat._count.products}
                 />
               ))}
