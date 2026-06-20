@@ -6,13 +6,63 @@
    ============================================================ */
 :root {
   /* Navy — used for navbar, headings, admin chrome */
-  --navy-900: #1e3a5f;
+  /* --navy-900: #1e3a5f;
   --navy-800: #234876;
   --navy-700: #2a5690;
   --navy-600: #3164a8;
   --navy-500: #3b74c0;
   --navy-100: #ddeaf9;
-  --navy-50: #eef5fc;
+  --navy-50: #eef5fc; */
+
+  /* 1. Forest & Clay (most recommended) */
+  --navy-900: #1e3d2f;
+  --navy-800: #2a5240;
+  --navy-700: #356752;
+  --navy-600: #4a8068;
+  --navy-500: #5e9a7e;
+  --navy-100: #e3eee8;
+  --navy-50: #f1f7f3;
+  --accent: #d97a4e;
+
+  /*2. Charcoal & Amber*/
+  /* --navy-900: #262b33;
+  --navy-800: #333a44;
+  --navy-700: #424a56;
+  --navy-600: #59626f;
+  --navy-500: #717a87;
+  --navy-100: #eceef1;
+  --navy-50: #f5f6f8;
+  --accent: #d4a017; */
+
+  /* 3. Plum & Citrus */
+  /* --navy-900: #3b2245;
+  --navy-800: #4a2c58;
+  --navy-700: #5d3970;
+  --navy-600: #7a4a93;
+  --navy-500: #9760ad;
+  --navy-100: #ece1f0;
+  --navy-50: #f6f1f8;
+  --accent: #f97316; */
+
+  /* 4. Teal & Coral */
+  /* --navy-900: #0f3d3e;
+  --navy-800: #155050;
+  --navy-700: #1d6868;
+  --navy-600: #278686;
+  --navy-500: #34a3a3;
+  --navy-100: #ddf0ef;
+  --navy-50: #eef8f7;
+  --accent: #f0654a; */
+
+  /* 5. Burgundy & Gold (boldest, lowest recommended for general merchandise) */
+  /* --navy-900: #4a1620;
+  --navy-800: #5c1c2b;
+  --navy-700: #74233a;
+  --navy-600: #952c4a;
+  --navy-500: #b6395d;
+  --navy-100: #f3e2e6;
+  --navy-50: #f9eef0;
+  --accent: #d4a017; */
 
   /* --navy-900: #7f00ff;
   --navy-800: #7c3aed;
