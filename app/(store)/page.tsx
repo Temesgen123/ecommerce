@@ -144,7 +144,7 @@ export default async function HomePage() {
             className="absolute -top-20 left-1/2 -translate-x-1/2 h-80 w-80 rounded-full blur-3xl opacity-20"
             style={{ background: 'var(--accent)' }}
           />
-          <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+          <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-12">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left — text content */}
               <div>
