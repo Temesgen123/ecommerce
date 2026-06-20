@@ -34,12 +34,12 @@ export default function CategoryCard({
         (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface)';
       }}
     >
-      <div className="relative h-16 w-16 overflow-hidden rounded-lg">
+      <div className="relative h-40 w-40 overflow-hidden rounded-lg">
         <Image
           src={image}
           alt={name}
           fill
-          sizes="64px"
+          sizes="128px"
           className="object-cover transition-transform group-hover:scale-105"
         />
       </div>
@@ -50,9 +50,10 @@ export default function CategoryCard({
         >
           {name}
         </p>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-          {count} products
-        </p>
+        <p
+          className="text-xs mt-0.5"
+          style={{ color: 'var(--text-muted)' }}
+        ></p>
       </div>
     </Link>
   );
