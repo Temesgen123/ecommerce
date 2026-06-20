@@ -6,21 +6,21 @@
    ============================================================ */
 :root {
   /* Navy — used for navbar, headings, admin chrome */
-  /* --navy-900: #1e3a5f;
+  --navy-900: #1e3a5f;
   --navy-800: #234876;
   --navy-700: #2a5690;
   --navy-600: #3164a8;
   --navy-500: #3b74c0;
   --navy-100: #ddeaf9;
-  --navy-50: #eef5fc; */
+  --navy-50: #eef5fc;
 
-  --navy-900: #7f00ff;
+  /* --navy-900: #7f00ff;
   --navy-800: #7c3aed;
   --navy-700: #8b5cf6;
   --navy-600: #a78bfa;
   --navy-500: #3b74c0;
   --navy-100: #ddeaf9;
-  --navy-50: #eef5fc;
+  --navy-50: #eef5fc; */
 
   /* Accent — orange, high-contrast CTA */
   --accent: #f97316;
