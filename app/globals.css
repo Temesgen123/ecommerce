@@ -65,7 +65,7 @@
   --accent: #d4a017; */
 
   /* 6. True Trust Blue (The Retail Gold Standard) */
-  --navy-900: #0434a5; /* Deep Slate Blue */
+  --navy-900: #021b54; /* Deep Slate Blue */
   --navy-800: #1e293b;
   --navy-700: #334155;
   --navy-600: #475569;
@@ -73,6 +73,7 @@
   --navy-100: #f1f5f9; /* Cool light gray-blue background tint */
   --navy-50: #f8fafc; /* Crisp off-white background */
   --accent: #f97316; /* High-conversion Vibrant Orange */
+  --navy-bg: #02277e;
 
   /* 7. Sophesticated Slate Gold */
   /*--navy-900: #18181b; /* Charcoal/Off-Black */

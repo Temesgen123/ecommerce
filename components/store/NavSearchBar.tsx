@@ -40,7 +40,7 @@ export default function NavSearchBar() {
         autoComplete="off"
         className="w-full rounded-full py-2 pl-9 pr-4 text-sm outline-none transition-colors"
         style={{
-          background: 'var(--navy-800)',
+          background: 'var(--navy-bg)',
           color: '#fff',
           border: '1px solid var(--navy-700)',
         }}
