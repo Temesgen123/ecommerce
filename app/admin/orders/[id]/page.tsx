@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import OrderStatusBadge from '@/components/admin/OrderStatusBadge';
 import OrderStatusUpdater from '@/components/admin/OrderStatusUpdater';
+import ShippingAssignment from '@/components/admin/ShippingAssignment';
 import { formatPrice, formatDateTime } from '@/lib/order-utils';
 
 export const dynamic = 'force-dynamic';
@@ -39,17 +40,24 @@ const STATUS_COLOR: Record<
 export default async function AdminOrderDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: {
-      items: {
-        include: { product: { select: { slug: true, images: true } } },
+  const [order, drivers] = await Promise.all([
+    prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: { product: { select: { slug: true, images: true } } },
+        },
+        statusHistory: {
+          orderBy: { createdAt: 'asc' },
+        },
       },
-      statusHistory: {
-        orderBy: { createdAt: 'asc' },
-      },
-    },
-  });
+    }),
+    prisma.user.findMany({
+      where: { role: 'DRIVER' },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
 
   if (!order) notFound();
 
@@ -57,7 +65,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
   const allStatuses = ['PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto mt-12 w-full max-w-[75%] space-y-6">
       {/* Back + header */}
       <div className="flex items-center gap-3">
         <Link
@@ -237,6 +245,29 @@ export default async function AdminOrderDetailPage({ params }: Props) {
           Update Status
         </p>
         <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
+      </div>
+
+      {/* Shipping & Delivery assignment */}
+      <div
+        className="rounded-xl border bg-white p-5"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <p
+          className="mb-3 text-sm font-semibold"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          Shipping &amp; Delivery
+        </p>
+        <ShippingAssignment
+          orderId={order.id}
+          drivers={drivers}
+          currentValues={{
+            carrier: (order as any).carrier ?? null,
+            carrierCompanyName: (order as any).carrierCompanyName ?? null,
+            trackingNumber: (order as any).trackingNumber ?? null,
+            driverId: (order as any).driverId ?? null,
+          }}
+        />
       </div>
 
       {/* Two-col layout */}

@@ -7,7 +7,8 @@ datasource db {
 }
 
 enum Role {
-  ADMIN
+   ADMIN
+   DRIVER
 }
 enum LoyaltyType {
   EARNED
@@ -20,13 +21,27 @@ enum OrderStatus {
   PAID
   PROCESSING
   SHIPPED
+  OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
   REFUNDED
+  RETURNED
 }
 enum DiscountType {
   PERCENTAGE
   FIXED
+}
+
+// ============================================================
+// Schema additions for carrier + driver assignment
+// ============================================================
+
+// 1. New enum for shipping carrier
+enum ShippingCarrier {
+  FEDEX
+  UPS
+  MYSTORE_DELIVERY
+  OTHER
 }
 // ─────────────────────────────────────────────
 // Auth
@@ -38,6 +53,7 @@ model User {
   password  String
   name      String?
   role      Role     @default(ADMIN)
+  deliveries Order[] @relation("DriverOrders")  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -108,13 +124,19 @@ model Order {
   discountCode        String?     // code string snapshot at purchase time
   items               OrderItem[]
   statusHistory OrderStatusHistory[]
+  driverId   String?
+  driver     User?    @relation("DriverOrders", fields: [driverId], references: [id], onDelete: SetNull)
+  carrier             ShippingCarrier?    
+  carrierCompanyName  String? // Only when carrier = OTHER
+  trackingNumber      String?    // used for FEDEX / UPS / OTHER, not MYSTORE_DELIVERY 
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
-
   @@index([status])
   @@index([customerEmail])
   @@index([stripeSessionId])
   @@map("orders")
+  @@index([driverId])
+  @@index([carrier])
 }
 
 model OrderItem {

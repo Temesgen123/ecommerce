@@ -51,7 +51,7 @@ export default function NewsletterForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={status === 'loading'}
-            className="flex-1 rounded-lg px-3 py-2 text-xs outline-none"
+            className="flex-1 rounded-lg px-1 py-2 text-xs outline-none"
             style={{
               background: 'rgba(255,255,255,0.1)',
               border: '1px solid rgba(255,255,255,0.2)',
@@ -61,7 +61,7 @@ export default function NewsletterForm() {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="rounded-lg px-3 py-2 text-xs font-bold transition-opacity hover:opacity-90 whitespace-nowrap"
+            className="rounded-lg px-1 py-2 text-xs font-bold transition-opacity hover:opacity-90 whitespace-nowrap"
             style={{ background: 'var(--accent)', color: '#fff' }}
           >
             {status === 'loading' ? '...' : 'Subscribe'}
