@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { updateDeliveryStatus } from '@/app/actions/driver';
-import { MapPin } from 'lucide-react';
+import { MapPin, User } from 'lucide-react';
 
 interface OrderItem {
   id: string;
@@ -18,11 +18,13 @@ interface Order {
   shippingAddress: any;
   total: number;
   items: OrderItem[];
+  driver?: { name: string | null; email: string } | null;
 }
 
 interface Props {
   order: Order;
   readOnly?: boolean;
+  showDriver?: boolean; // true in admin oversight view
 }
 
 const STATUS_LABELS: Record<
@@ -39,7 +41,50 @@ const STATUS_LABELS: Record<
   RETURNED: { label: 'Returned', color: '#991b1b', bg: '#fee2e2' },
 };
 
-export default function DriverOrderCard({ order, readOnly = false }: Props) {
+const NEXT_ACTIONS: Record<
+  string,
+  {
+    status: 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'RETURNED';
+    label: string;
+    bg: string;
+    color: string;
+  }[]
+> = {
+  SHIPPED: [
+    {
+      status: 'OUT_FOR_DELIVERY',
+      label: 'Mark Out for Delivery',
+      bg: '#fef3c7',
+      color: '#92400e',
+    },
+    {
+      status: 'RETURNED',
+      label: 'Mark Returned',
+      bg: '#fee2e2',
+      color: '#991b1b',
+    },
+  ],
+  OUT_FOR_DELIVERY: [
+    {
+      status: 'DELIVERED',
+      label: 'Mark Delivered',
+      bg: '#dcfce7',
+      color: '#166534',
+    },
+    {
+      status: 'RETURNED',
+      label: 'Mark Returned',
+      bg: '#fee2e2',
+      color: '#991b1b',
+    },
+  ],
+};
+
+export default function DriverOrderCard({
+  order,
+  readOnly = false,
+  showDriver = false,
+}: Props) {
   const [isPending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState(order.status);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +108,7 @@ export default function DriverOrderCard({ order, readOnly = false }: Props) {
     color: '#666',
     bg: '#f3f4f6',
   };
+  const availableActions = NEXT_ACTIONS[localStatus] ?? [];
   const address = order.shippingAddress as {
     line1?: string;
     line2?: string;
@@ -75,7 +121,7 @@ export default function DriverOrderCard({ order, readOnly = false }: Props) {
 
   return (
     <div
-      className="rounded-lg border p-4 flex justify-between"
+      className="flex justify-between rounded-lg border p-4  w-full"
       style={{
         background: 'var(--bg-surface)',
         borderColor: 'var(--border-subtle)',
@@ -84,6 +130,12 @@ export default function DriverOrderCard({ order, readOnly = false }: Props) {
       {/* Order number + status */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
+          <p
+            className="text-xs font-semibold uppercase tracking-wide mb-0.5"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Order ID
+          </p>
           <p
             className="font-mono text-sm font-bold"
             style={{ color: 'var(--text-primary)' }}
@@ -94,13 +146,21 @@ export default function DriverOrderCard({ order, readOnly = false }: Props) {
             {order.items.length} item{order.items.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <span
-          className="rounded-full px-2.5 py-1 text-xs font-semibold flex-shrink-0"
-          style={{ background: statusInfo.bg, color: statusInfo.color }}
-        >
-          {statusInfo.label}
-        </span>
       </div>
+
+      {/* Assigned driver — admin oversight view only */}
+      {showDriver && order.driver && (
+        <div
+          className="mb-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs"
+          style={{ background: 'var(--navy-50)', color: 'var(--navy-700)' }}
+        >
+          <User className="h-3 w-3" />
+          Assigned to{' '}
+          <span className="font-semibold">
+            {order.driver.name ?? order.driver.email}
+          </span>
+        </div>
+      )}
 
       {/* Customer */}
       <div className="mb-2">
@@ -158,6 +218,15 @@ export default function DriverOrderCard({ order, readOnly = false }: Props) {
         )}
       </div>
 
+      <div>
+        <span
+          className="rounded-full px-2.5 py-1 text-xs font-semibold flex-shrink-0"
+          style={{ background: statusInfo.bg, color: statusInfo.color }}
+        >
+          {statusInfo.label}
+        </span>
+      </div>
+
       {error && (
         <p
           className="text-xs mb-2 rounded px-2 py-1.5"
@@ -167,41 +236,19 @@ export default function DriverOrderCard({ order, readOnly = false }: Props) {
         </p>
       )}
 
-      {/* Status update buttons */}
-      {!readOnly && (
+      {!readOnly && availableActions.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {localStatus !== 'OUT_FOR_DELIVERY' &&
-            localStatus !== 'DELIVERED' &&
-            localStatus !== 'RETURNED' && (
-              <button
-                onClick={() => handleUpdate('OUT_FOR_DELIVERY')}
-                disabled={isPending}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-                style={{ background: '#fef3c7', color: '#92400e' }}
-              >
-                Mark Out for Delivery
-              </button>
-            )}
-          {localStatus !== 'DELIVERED' && localStatus !== 'RETURNED' && (
+          {availableActions.map((action) => (
             <button
-              onClick={() => handleUpdate('DELIVERED')}
+              key={action.status}
+              onClick={() => handleUpdate(action.status)}
               disabled={isPending}
               className="rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-              style={{ background: '#dcfce7', color: '#166534' }}
+              style={{ background: action.bg, color: action.color }}
             >
-              Mark Delivered
+              {action.label}
             </button>
-          )}
-          {localStatus !== 'DELIVERED' && localStatus !== 'RETURNED' && (
-            <button
-              onClick={() => handleUpdate('RETURNED')}
-              disabled={isPending}
-              className="rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-              style={{ background: '#fee2e2', color: '#991b1b' }}
-            >
-              Mark Returned
-            </button>
-          )}
+          ))}
         </div>
       )}
     </div>

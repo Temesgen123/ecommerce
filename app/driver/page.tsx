@@ -9,25 +9,28 @@ export const dynamic = 'force-dynamic';
 
 export default async function DriverDashboardPage() {
   const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role;
 
-  if (!session?.user || (session.user as any).role !== 'DRIVER') {
+  if (!session?.user || (role !== 'DRIVER' && role !== 'ADMIN')) {
     redirect('/driver/login');
   }
 
-  const { active, completed } = await getDriverOrders();
+  const { active, completed, isAdmin } = await getDriverOrders();
 
   return (
-    <div className="mx-auto max-w-[75%] w-full px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-[75%] px-4 py-8 sm:px-6">
       <div className="mb-6 flex items-start justify-between gap-3">
         <div>
           <h1
             className="text-2xl font-bold"
             style={{ color: 'var(--text-primary)' }}
           >
-            My Deliveries
+            {isAdmin ? 'All Deliveries' : 'My Deliveries'}
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Signed in as {session.user.name ?? session.user.email}
+            {isAdmin
+              ? `Signed in as ${session.user.name ?? session.user.email} (admin oversight view)`
+              : `Signed in as ${session.user.name ?? session.user.email}`}
           </p>
         </div>
         <SignOutButton />
@@ -45,12 +48,18 @@ export default async function DriverDashboardPage() {
             className="text-sm py-8 text-center"
             style={{ color: 'var(--text-muted)' }}
           >
-            No active deliveries assigned right now.
+            {isAdmin
+              ? 'No active deliveries assigned to any driver right now.'
+              : 'No active deliveries assigned right now.'}
           </p>
         ) : (
           <div className="space-y-3">
-            {active.map((order) => (
-              <DriverOrderCard key={order.id} order={order} />
+            {active.map((order: any) => (
+              <DriverOrderCard
+                key={order.id}
+                order={order}
+                showDriver={isAdmin}
+              />
             ))}
           </div>
         )}
@@ -72,8 +81,13 @@ export default async function DriverDashboardPage() {
           </p>
         ) : (
           <div className="space-y-3 opacity-70">
-            {completed.map((order) => (
-              <DriverOrderCard key={order.id} order={order} readOnly />
+            {completed.map((order: any) => (
+              <DriverOrderCard
+                key={order.id}
+                order={order}
+                readOnly
+                showDriver={isAdmin}
+              />
             ))}
           </div>
         )}
