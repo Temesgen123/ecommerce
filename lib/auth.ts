@@ -9,6 +9,9 @@ import { prisma } from '@/lib/prisma';
 import { authLimiter } from '@/lib/ratelimit';
 import { headers } from 'next/headers';
 
+const DRIVER_SESSION_MAX_AGE_SECONDS = 60 * 60; // 1 hour
+const ADMIN_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60; // 8 hours — matches existing session.maxAge
+
 export const authOptions: NextAuthOptions = {
   // ── Session ──────────────────────────────────────────────
   session: {
@@ -97,6 +100,15 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as { role: string }).role;
+
+        // Stamp a role-aware expiry. NextAuth will use this `exp` claim
+        // instead of the global session.maxAge for this specific token.
+        const maxAgeSeconds =
+          token.role === 'DRIVER'
+            ? DRIVER_SESSION_MAX_AGE_SECONDS
+            : ADMIN_SESSION_MAX_AGE_SECONDS;
+
+        token.exp = Math.floor(Date.now() / 1000) + maxAgeSeconds;
       }
       return token;
     },

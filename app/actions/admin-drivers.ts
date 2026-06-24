@@ -13,6 +13,18 @@ async function requireAdmin() {
   if (!session?.user || (session.user as any).role !== 'ADMIN') {
     throw new Error('Unauthorized — admin account required.');
   }
+
+  // Fresh DB check — same reasoning as requireDriver() in
+  // app/actions/driver.ts. Closes the window where a demoted or
+  // deleted admin could keep acting on a still-valid JWT.
+  const freshUser = await prisma.user.findUnique({
+    where: { id: (session.user as any).id },
+    select: { id: true, role: true },
+  });
+
+  if (!freshUser || freshUser.role !== 'ADMIN') {
+    throw new Error('Unauthorized — admin account required.');
+  }
 }
 
 export type DriverFormState = {
@@ -79,7 +91,6 @@ export async function createDriver(
 }
 
 // ─── Update ───────────────────────────────────────────────────
-// Password is optional on update — leave blank to keep the current one.
 export async function updateDriver(
   id: string,
   _prev: DriverFormState,
@@ -124,8 +135,16 @@ export async function updateDriver(
 // ─── Delete ───────────────────────────────────────────────────
 export async function deleteDriver(id: string): Promise<void> {
   await requireAdmin();
-  // Orders assigned to this driver get driverId set to null
-  // automatically (onDelete: SetNull on the relation).
   await prisma.user.delete({ where: { id } });
   revalidatePath('/admin/drivers');
+}
+
+// ─── Shipping assignment helpers ───────────────────────────────
+export async function getAllDrivers() {
+  await requireAdmin();
+  return prisma.user.findMany({
+    where: { role: 'DRIVER' },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: 'asc' },
+  });
 }
