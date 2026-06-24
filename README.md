@@ -1,6 +1,6 @@
 # MyStore — Full-Stack E-Commerce Platform
 
-A production-ready, fully-featured e-commerce application built with Next.js 16, TypeScript, and PostgreSQL. Includes a complete admin panel, customer accounts, Stripe payments, loyalty program, gift cards, abandoned cart recovery, and more — everything needed to launch a real online store.
+A production-ready, fully-featured e-commerce application built with Next.js 16, TypeScript, and PostgreSQL. Includes a complete admin panel, customer accounts, Stripe payments, loyalty program, gift cards, abandoned cart recovery, a dedicated delivery driver system, and more — everything needed to launch a real online store with in-house or third-party delivery operations.
 
 ---
 
@@ -8,7 +8,8 @@ A production-ready, fully-featured e-commerce application built with Next.js 16,
 
 ### Storefront
 
-- Homepage with auto-playing promotional carousel
+- Homepage with auto-playing promotional carousel and category showcase (real product photography, not icons)
+- Global navbar with horizontal scrolling category menu and integrated search — accessible from any page
 - Product catalog with category filtering, price range, and sorting
 - Product detail pages with image gallery, related products, and reviews
 - Verified-purchase product reviews (admin-moderated)
@@ -33,14 +34,25 @@ A production-ready, fully-featured e-commerce application built with Next.js 16,
 - Gift cards (fixed or custom amount, 2-year expiry, email delivery, balance checker)
 - Discount codes and gift cards combine correctly in a single Stripe coupon
 - Order confirmation emails via Resend
-- **Abandoned cart email recovery** — automatically reminds customers who leave items in their cart for 2+ hours
+- **Abandoned cart email recovery** — automatically reminds logged-in customers who leave items in their cart for 2+ hours
+
+### Shipping & Delivery
+
+- **Multi-carrier support**: FedEx, UPS, MyStore Delivery (in-house), or Other (with custom company name)
+- **Dedicated delivery driver accounts** — separate role, separate login at `/driver/login`
+- Admin assigns orders to specific drivers when using MyStore Delivery
+- Drivers see only their assigned orders: order number, customer, shipping address, and current status
+- Drivers can update status through the delivery lifecycle: **Out for Delivery → Delivered**, or mark **Returned**
+- Full order status history log, including which driver made each update
+- Tracking number field for external carriers (FedEx/UPS/Other)
 
 ### Admin Panel
 
 - Dashboard with revenue analytics (7d / 30d / 90d, period comparison, charts)
 - Product management (create, edit, bulk actions, image upload via Cloudinary)
-- Category management
-- Order management with status history and CSV export
+- Category management (with real product photography)
+- Order management with status history, shipping/carrier assignment, and CSV export
+- **Driver account management** — create, edit, and remove delivery driver accounts
 - Customer list with order history per customer
 - Discount code management
 - Gift card management
@@ -51,6 +63,7 @@ A production-ready, fully-featured e-commerce application built with Next.js 16,
 
 ### Infrastructure & Reliability
 
+- Three-tier role-based access control: **Admin**, **Customer**, **Driver** — enforced at the edge via middleware, not just in page components
 - Rate limiting on all auth, contact, and newsletter endpoints (Upstash Redis)
 - Input sanitization on all public-facing forms
 - Custom error pages (404, runtime errors, global error boundary)
@@ -61,21 +74,33 @@ A production-ready, fully-featured e-commerce application built with Next.js 16,
 
 ## 🛠 Tech Stack
 
-| Layer           | Technology                                          |
-| --------------- | --------------------------------------------------- |
-| Framework       | Next.js 16 (App Router, TypeScript, Server Actions) |
-| Database        | PostgreSQL (Neon serverless)                        |
-| ORM             | Prisma 7                                            |
-| Auth (Admin)    | NextAuth.js                                         |
-| Auth (Customer) | Custom session-based auth                           |
-| Payments        | Stripe Checkout + Webhooks                          |
-| Styling         | Tailwind CSS + shadcn/ui                            |
-| Images          | Cloudinary                                          |
-| Email           | Resend                                              |
-| Newsletter Sync | Brevo (HTTP API)                                    |
-| Live Chat       | Crisp                                               |
-| Rate Limiting   | Upstash Redis                                       |
-| Hosting         | Vercel                                              |
+| Layer                 | Technology                                          |
+| --------------------- | --------------------------------------------------- |
+| Framework             | Next.js 16 (App Router, TypeScript, Server Actions) |
+| Database              | PostgreSQL (Neon serverless)                        |
+| ORM                   | Prisma 7                                            |
+| Auth (Admin & Driver) | NextAuth.js (shared `User` model, role-based)       |
+| Auth (Customer)       | Custom session-based auth                           |
+| Payments              | Stripe Checkout + Webhooks                          |
+| Styling               | Tailwind CSS + shadcn/ui                            |
+| Images                | Cloudinary                                          |
+| Email                 | Resend                                              |
+| Newsletter Sync       | Brevo (HTTP API)                                    |
+| Live Chat             | Crisp                                               |
+| Rate Limiting         | Upstash Redis                                       |
+| Hosting               | Vercel                                              |
+
+---
+
+## 👤 User Roles
+
+| Role         | Login            | Access                                                        |
+| ------------ | ---------------- | ------------------------------------------------------------- |
+| **Admin**    | `/admin/login`   | Full control — products, orders, customers, drivers, settings |
+| **Driver**   | `/driver/login`  | Only their assigned deliveries; can update delivery status    |
+| **Customer** | `/account/login` | Their own orders, addresses, wishlist, loyalty points         |
+
+Admins and drivers share the same underlying `User` table (distinguished by a `role` field), while customers use a separate `Customer` table with its own session system. Route access for `/admin/*` and `/driver/*` is enforced in `middleware.ts` at the edge — admins may also access `/driver/*` for oversight, but drivers can never access `/admin/*`.
 
 ---
 
@@ -85,6 +110,7 @@ A production-ready, fully-featured e-commerce application built with Next.js 16,
 - A [Neon](https://neon.tech) PostgreSQL database (free tier works)
 - Accounts for: [Stripe](https://stripe.com), [Cloudinary](https://cloudinary.com), [Resend](https://resend.com), [Upstash](https://upstash.com), [Brevo](https://brevo.com) — all have free tiers sufficient for getting started
 - A [Crisp](https://crisp.chat) account (optional, for live chat)
+- An [Unsplash Developer](https://unsplash.com/developers) account (optional — only needed if re-running the category/product image-fetch scripts)
 
 ---
 
@@ -121,15 +147,17 @@ npx tsx prisma/products-seed.ts
 npx tsx prisma/new-category-products-seed.ts
 ```
 
-This populates ~70 demo products across 18 categories with working images.
+This populates ~70 demo products across 18 categories with real Cloudinary-hosted images.
 
-### 5. Create an admin user
+### 5. Create admin and driver accounts
+
+Use Prisma Studio for the first account:
 
 ```bash
-npx tsx prisma/create-admin.ts
+npx prisma studio
 ```
 
-(Or insert directly via Prisma Studio: `npx prisma studio`)
+Create a `User` record with `role: ADMIN` for yourself. Once logged in, additional admin accounts can be created the same way, and **driver accounts can be created directly from the admin panel** at `/admin/drivers` — no need to touch Prisma Studio again after the first admin exists.
 
 ### 6. Run the development server
 
@@ -137,7 +165,9 @@ npx tsx prisma/create-admin.ts
 npm run dev
 ```
 
-Visit `http://localhost:3000` for the storefront and `http://localhost:3000/admin/login` for the admin panel.
+- Storefront: `http://localhost:3000`
+- Admin panel: `http://localhost:3000/admin/login`
+- Driver portal: `http://localhost:3000/driver/login`
 
 ### 7. Set up Stripe webhooks (local testing)
 
@@ -151,24 +181,25 @@ Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET` in `.env`.
 
 ## 🔑 Environment Variables
 
-| Variable                             | Where to get it                                                        |
-| ------------------------------------ | ---------------------------------------------------------------------- |
-| `DATABASE_URL`                       | Neon dashboard → Connection string (append `?connect_timeout=15`)      |
-| `NEXTAUTH_SECRET`                    | Generate with `openssl rand -base64 32`                                |
-| `NEXTAUTH_URL`                       | Your site URL (e.g. `http://localhost:3000`)                           |
-| `STRIPE_SECRET_KEY`                  | Stripe Dashboard → Developers → API keys                               |
-| `STRIPE_WEBHOOK_SECRET`              | Stripe CLI output, or Dashboard → Webhooks                             |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard → Developers → API keys                               |
-| `RESEND_API_KEY`                     | Resend Dashboard → API Keys                                            |
-| `CLOUDINARY_CLOUD_NAME`              | Cloudinary Dashboard → Account Details                                 |
-| `CLOUDINARY_API_KEY`                 | Cloudinary Dashboard → Account Details                                 |
-| `CLOUDINARY_API_SECRET`              | Cloudinary Dashboard → Account Details                                 |
-| `NEXT_PUBLIC_CRISP_WEBSITE_ID`       | Crisp Dashboard → Settings → Website Settings                          |
-| `STORE_OWNER_EMAIL`                  | Your email — receives contact form + order notifications               |
-| `BREVO_API_KEY`                      | Brevo Dashboard → SMTP & API → API Keys                                |
-| `UPSTASH_REDIS_REST_URL`             | Upstash Dashboard → Redis database → REST API                          |
-| `UPSTASH_REDIS_REST_TOKEN`           | Upstash Dashboard → Redis database → REST API                          |
-| `CRON_SECRET`                        | Generate with `openssl rand -hex 32` (secures the abandoned-cart cron) |
+| Variable                             | Where to get it                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| `DATABASE_URL`                       | Neon dashboard → Connection string (append `?connect_timeout=15`)          |
+| `NEXTAUTH_SECRET`                    | Generate with `openssl rand -base64 32`                                    |
+| `NEXTAUTH_URL`                       | Your site URL (e.g. `http://localhost:3000`)                               |
+| `STRIPE_SECRET_KEY`                  | Stripe Dashboard → Developers → API keys                                   |
+| `STRIPE_WEBHOOK_SECRET`              | Stripe CLI output, or Dashboard → Webhooks                                 |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard → Developers → API keys                                   |
+| `RESEND_API_KEY`                     | Resend Dashboard → API Keys                                                |
+| `CLOUDINARY_CLOUD_NAME`              | Cloudinary Dashboard → Account Details                                     |
+| `CLOUDINARY_API_KEY`                 | Cloudinary Dashboard → Account Details                                     |
+| `CLOUDINARY_API_SECRET`              | Cloudinary Dashboard → Account Details                                     |
+| `NEXT_PUBLIC_CRISP_WEBSITE_ID`       | Crisp Dashboard → Settings → Website Settings                              |
+| `STORE_OWNER_EMAIL`                  | Your email — receives contact form + order notifications                   |
+| `BREVO_API_KEY`                      | Brevo Dashboard → SMTP & API → API Keys                                    |
+| `UPSTASH_REDIS_REST_URL`             | Upstash Dashboard → Redis database → REST API                              |
+| `UPSTASH_REDIS_REST_TOKEN`           | Upstash Dashboard → Redis database → REST API                              |
+| `CRON_SECRET`                        | Generate with `openssl rand -hex 32` (secures the abandoned-cart cron)     |
+| `UNSPLASH_ACCESS_KEY`                | Unsplash Developers → Create an app (optional, only for re-seeding images) |
 
 ---
 
@@ -184,6 +215,7 @@ Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET` in `.env`.
    ```
 6. Configure your Stripe webhook endpoint to point at `https://yourdomain.com/api/webhooks/stripe`
 7. Vercel Cron (configured in `vercel.json`) will automatically run the abandoned-cart email job hourly — no extra setup needed
+8. Create your first production admin via Prisma Studio connected to the production database, then create driver accounts from the admin panel as needed
 
 ---
 
@@ -192,9 +224,13 @@ Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET` in `.env`.
 ```
 app/
 ├── (store)/              # Public storefront routes
-├── admin/                # Admin panel (protected)
+├── admin/                # Admin panel (protected — role: ADMIN only)
+│   ├── drivers/          # Driver account management
+│   └── orders/[id]/      # Order detail, including shipping/carrier assignment
+├── driver/               # Driver portal (protected — role: DRIVER or ADMIN)
+│   └── login/
 ├── account/              # Customer account routes
-├── actions/              # Server actions (forms, cart, auth)
+├── actions/              # Server actions (forms, cart, auth, drivers, shipping)
 ├── api/
 │   ├── webhooks/stripe/  # Stripe webhook handler
 │   └── cron/             # Scheduled jobs (abandoned carts)
@@ -202,12 +238,19 @@ app/
 ├── not-found.tsx         # 404 page
 └── global-error.tsx      # Root-level error boundary
 
+middleware.ts             # Edge-level role-based route protection for /admin and /driver
+
 lib/
 ├── prisma.ts              # Prisma client singleton
-├── auth.ts                # NextAuth configuration (admin)
+├── auth.ts                # NextAuth configuration (shared by admin + driver roles)
 ├── customer-auth.ts        # Customer session logic
 ├── ratelimit.ts             # Upstash rate limiters
-└── sanitize.ts               # Input sanitization helpers
+└── sanitize.ts                # Input sanitization helpers
+
+components/
+├── admin/                 # Admin-only components (DriversClient, ShippingAssignment, etc.)
+├── driver/                 # Driver portal components (DriverOrderCard, SignOutButton)
+└── store/                   # Storefront components (Navbar, CategoryNavBar, NavSearchBar, etc.)
 
 prisma/
 ├── schema.prisma          # Database schema
@@ -220,19 +263,21 @@ prisma/
 
 - **Neon free tier sleeps after inactivity** — the first request after idle time may take 10–45 seconds. Upgrade to a paid Neon plan to eliminate this, or accept it as a minor demo-only quirk.
 - **Abandoned cart emails apply to logged-in customers only** — guest checkouts aren't tracked (no persistent identity to attach a cart to).
+- **Driver deletion unassigns rather than deletes orders** — removing a driver account sets their assigned orders back to unassigned; an admin will need to manually reassign them.
 - **Crisp, Brevo, and Upstash all use free tiers** — sufficient for a small-to-medium store; upgrade as you scale.
 
 ---
 
 ## 🗺️ Possible Future Enhancements
 
+- Driver mobile app or PWA support for on-the-go status updates
+- Real-time delivery tracking map for customers
 - Subscription / recurring orders
 - Multi-vendor marketplace support
 - Multi-language / multi-currency
 - AI-powered product recommendations
 - Product bundles
 - Affiliate / referral program
-- Native mobile app (React Native)
 
 ---
 
