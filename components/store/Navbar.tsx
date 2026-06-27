@@ -53,9 +53,9 @@ export default function Navbar({
             <img
               src="/logo.png"
               alt="Logo"
-              width={50}
-              height={50}
-              className="rounded-full hidden sm:block"
+              width={30}
+              height={30}
+              className="rounded-full"
             />
             My<span style={{ color: 'var(--accent)' }}>Store</span>
           </Link>
