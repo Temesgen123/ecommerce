@@ -33,6 +33,7 @@ const STATUS_COLOR: Record<
   PAID: { bg: '#DBEAFE', border: '#93C5FD', text: '#1D4ED8' },
   PROCESSING: { bg: '#EDE9FE', border: '#C4B5FD', text: '#6D28D9' },
   SHIPPED: { bg: '#E0E7FF', border: '#A5B4FC', text: '#4338CA' },
+  OUT_FOR_DELIVERY: { bg: '#E0E7FF', border: '#A5B4FC', text: '#4338CA' },
   DELIVERED: { bg: '#DCFCE7', border: '#86EFAC', text: '#15803D' },
   CANCELLED: { bg: '#FEE2E2', border: '#FCA5A5', text: '#DC2626' },
   REFUNDED: { bg: '#F1F5F9', border: '#CBD5E1', text: '#475569' },
@@ -63,7 +64,14 @@ export default async function AdminOrderDetailPage({ params }: Props) {
   if (!order) notFound();
 
   const address = order.shippingAddress as Record<string, string> | null;
-  const allStatuses = ['PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+  const allStatuses = [
+    'PENDING',
+    'PAID',
+    'PROCESSING',
+    'SHIPPED',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+  ];
 
   return (
     <div className="mx-auto mt-12 w-full max-w-[75%] space-y-6">
