@@ -2,10 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// Replace each URL below with the corresponding value from
+// prisma/hero-images.json after running fetch-hero-images.ts.
+const HERO_IMAGES: Record<string, string> = {
+  electronics:
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1782562618/hero-slides/electronics.jpg',
+  'new-arrivals':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1782562620/hero-slides/new-arrivals.jpg',
+  'free-shipping':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1782562621/hero-slides/free-shipping.jpg',
+  'top-rated':
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1782562624/hero-slides/top-rated.jpg',
+};
 
 const slides = [
   {
+    key: 'electronics',
     badge: '🔥 Hot Deal',
     title: 'Up to 40% Off Electronics',
     sub: 'Latest gadgets at unbeatable prices. Limited time only.',
@@ -15,6 +30,7 @@ const slides = [
     accent: '#f97316',
   },
   {
+    key: 'new-arrivals',
     badge: '🆕 New Arrivals',
     title: 'Fresh Styles Just Landed',
     sub: 'Be the first to get the newest products added to our store.',
@@ -24,6 +40,7 @@ const slides = [
     accent: '#3b82f6',
   },
   {
+    key: 'free-shipping',
     badge: '🚚 Free Shipping',
     title: 'Orders Over $50 Ship Free',
     sub: 'No promo code needed. Free standard shipping on qualifying orders.',
@@ -33,6 +50,7 @@ const slides = [
     accent: '#22c55e',
   },
   {
+    key: 'top-rated',
     badge: '⭐ Top Rated',
     title: 'Customer Favourite Picks',
     sub: 'Thousands of 5-star reviews. Shop what everyone is loving.',
@@ -68,10 +86,11 @@ export default function HeroCarousel() {
   }, []); // ← empty dependency array, no stale closure
 
   const slide = slides[current];
+  const imageUrl = HERO_IMAGES[slide.key];
 
   return (
     <div
-      className="relative h-full w-full flex flex-col justify-center rounded-2xl overflow-hidden p-8"
+      className="relative h-full w-full flex items-center rounded-2xl overflow-hidden p-8"
       style={{
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.08)',
@@ -92,33 +111,56 @@ export default function HeroCarousel() {
         style={{ background: slide.accent }}
       />
 
-      {/* Content */}
-      <div
-        className="relative z-10 transition-all duration-400"
-        style={{
-          opacity: animating ? 0 : 1,
-          transform: animating ? 'translateY(8px)' : 'translateY(0)',
-        }}
-      >
-        <span
-          className="inline-block rounded-full px-3 py-1 text-xs font-bold mb-4"
-          style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}
+      {/* Content row — text left, image right (Amazon-style split) */}
+      <div className="relative z-10 flex w-full items-center gap-6">
+        {/* Text */}
+        <div
+          className="flex-1 min-w-0 transition-all duration-400"
+          style={{
+            opacity: animating ? 0 : 1,
+            transform: animating ? 'translateY(8px)' : 'translateY(0)',
+          }}
         >
-          {slide.badge}
-        </span>
-        <h3 className="text-2xl font-extrabold text-white leading-tight mb-3">
-          {slide.title}
-        </h3>
-        <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.7)' }}>
-          {slide.sub}
-        </p>
-        <Link
-          href={slide.href}
-          className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold transition-opacity hover:opacity-90"
-          style={{ background: slide.accent, color: '#fff' }}
+          <span
+            className="inline-block rounded-full px-3 py-1 text-xs font-bold mb-4"
+            style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}
+          >
+            {slide.badge}
+          </span>
+          <h3 className="text-2xl font-extrabold text-white leading-tight mb-3">
+            {slide.title}
+          </h3>
+          <p
+            className="text-sm mb-6"
+            style={{ color: 'rgba(255,255,255,0.7)' }}
+          >
+            {slide.sub}
+          </p>
+          <Link
+            href={slide.href}
+            className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold transition-opacity hover:opacity-90"
+            style={{ background: slide.accent, color: '#fff' }}
+          >
+            {slide.cta} <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* Image — right side, matches Amazon's product-photo-beside-text layout */}
+        <div
+          className="relative hidden h-40 w-40 flex-shrink-0 overflow-hidden rounded-xl sm:block transition-all duration-400"
+          style={{
+            opacity: animating ? 0 : 1,
+            transform: animating ? 'scale(0.95)' : 'scale(1)',
+          }}
         >
-          {slide.cta} <ArrowRight className="w-4 h-4" />
-        </Link>
+          <Image
+            src={imageUrl}
+            alt={slide.title}
+            fill
+            sizes="160px"
+            className="object-cover"
+          />
+        </div>
       </div>
 
       {/* Navigation arrows */}
