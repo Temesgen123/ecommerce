@@ -19,6 +19,7 @@ const STATUS_ICON: Record<string, string> = {
   PAID: '💳',
   PROCESSING: '📦',
   SHIPPED: '🚚',
+  OUT_FOR_DELIVERY: '🚚',
   DELIVERED: '✅',
   CANCELLED: '❌',
   REFUNDED: '↩️',
