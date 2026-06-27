@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   console.log('🔔 Webhook received');
-
   const body = await req.text();
+
   const sig = req.headers.get('stripe-signature');
 
   if (!sig) {
@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
 
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     console.error('❌ STRIPE_WEBHOOK_SECRET not set');
+
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 500 },
     );
   }
-
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET,
     );
+
     console.log('✅ Signature verified. Event type:', event.type);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -56,11 +57,13 @@ export async function POST(req: NextRequest) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
+
   console.log('💳 Session ID:', session.id);
   console.log('📦 Metadata:', JSON.stringify(session.metadata));
   console.log('📧 Customer email:', session.customer_details?.email);
 
   // Guard against duplicate deliveries
+
   const existing = await prisma.order.findUnique({
     where: { stripeSessionId: session.id },
   });
@@ -88,7 +91,6 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-
   if (cartItems.length === 0) {
     console.error('❌ Cart is empty in metadata');
     return NextResponse.json({ error: 'Empty cart' }, { status: 400 });
@@ -105,7 +107,10 @@ export async function POST(req: NextRequest) {
   // Also save discount info on the order
   const discountCode = session.metadata?.discountCode ?? null;
 
-  const addr = (session as any).shipping_details?.address;
+  const addr =
+    (session as any).collected_information?.shipping_details?.address ??
+    (session as any).shipping_details?.address;
+
   const shippingAddress = addr
     ? {
         line1: addr.line1 ?? '',
@@ -116,6 +121,12 @@ export async function POST(req: NextRequest) {
         country: addr.country ?? '',
       }
     : null;
+
+  if (!addr) {
+    console.warn(
+      '⚠️ No shipping address found on session — checked both collected_information.shipping_details.address and shipping_details.address',
+    );
+  }
 
   let order;
   try {
@@ -156,19 +167,17 @@ export async function POST(req: NextRequest) {
     const customer = await prisma.customer.findFirst({
       where: { email: session.customer_details?.email ?? '' },
     });
-
     const giftCardCode = session.metadata?.giftCardCode;
     const giftCardDiscount = parseInt(
       session.metadata?.giftCardDiscount ?? '0',
     );
-
     if (giftCardCode && giftCardDiscount > 0) {
       await redeemGiftCard(giftCardCode, giftCardDiscount, order.id);
     }
-
     if (customer) {
       await awardPointsForOrder(customer.id, order.id, order.total);
     }
+
     // Record initial PAID status in history
     await prisma.orderStatusHistory.create({
       data: { orderId: order.id, status: 'PAID' },
@@ -231,6 +240,5 @@ export async function POST(req: NextRequest) {
     total: order.total,
     shippingAddress: shippingAddress,
   });
-
   return NextResponse.json({ received: true });
 }
