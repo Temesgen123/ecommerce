@@ -47,9 +47,16 @@ export default function Navbar({
           <MobileMenu customerName={customerName} />
           <Link
             href="/"
-            className="text-xl font-bold tracking-tight"
+            className="text-xl font-bold tracking-tight flex gap-3"
             style={{ color: '#fff' }}
           >
+            <img
+              src="/logo.png"
+              alt="Logo"
+              width={50}
+              height={50}
+              className="rounded-full"
+            />
             My<span style={{ color: 'var(--accent)' }}>Store</span>
           </Link>
         </div>
