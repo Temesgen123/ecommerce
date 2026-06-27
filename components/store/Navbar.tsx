@@ -55,7 +55,7 @@ export default function Navbar({
               alt="Logo"
               width={50}
               height={50}
-              className="rounded-full"
+              className="rounded-full hidden sm:block"
             />
             My<span style={{ color: 'var(--accent)' }}>Store</span>
           </Link>
