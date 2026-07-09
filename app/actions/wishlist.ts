@@ -7,24 +7,41 @@ import { revalidatePath } from 'next/cache';
 export async function getWishlistItems() {
   const customer = await getCustomer();
   if (!customer) return [];
-
   const items = await prisma.wishlist.findMany({
     where: { customerId: customer.id },
     include: {
       product: {
-        include: { category: { select: { name: true } } },
+        include: {
+          category: { select: { name: true } },
+          // Include variants so WishlistPage can use them for
+          // add-to-cart (effective price, stock, variantId)
+          variants: {
+            select: {
+              id: true,
+              color: true,
+              size: true,
+              price: true,
+              stock: true,
+            },
+          },
+        },
       },
     },
     orderBy: { createdAt: 'desc' },
   });
 
   return items.map((w) => ({
-    id: w.product.id,
-    name: w.product.name,
-    slug: w.product.slug,
-    price: w.product.price,
-    image: w.product.images[0] ?? null,
-    category: w.product.category?.name ?? null,
+    id: w.id, // wishlist row id (for keying the list)
+    product: {
+      id: w.product.id,
+      name: w.product.name,
+      slug: w.product.slug,
+      price: w.product.price,
+      compareAt: w.product.compareAt,
+      images: w.product.images,
+      stock: w.product.stock,
+      variants: w.product.variants,
+    },
   }));
 }
 

@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
 
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     console.error('❌ STRIPE_WEBHOOK_SECRET not set');
-
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 500 },
     );
   }
+
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(
@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET,
     );
-
     console.log('✅ Signature verified. Event type:', event.type);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -63,7 +62,6 @@ export async function POST(req: NextRequest) {
   console.log('📧 Customer email:', session.customer_details?.email);
 
   // Guard against duplicate deliveries
-
   const existing = await prisma.order.findUnique({
     where: { stripeSessionId: session.id },
   });
@@ -72,14 +70,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // Parse cart metadata
+  // Parse cart metadata — now includes variantId and variantLabel
   type CartMeta = {
     id: string;
+    variantId: string;
+    variantLabel: string | null;
     quantity: number;
     price: number;
     name: string;
     slug: string;
   };
+
   let cartItems: CartMeta[] = [];
   try {
     cartItems = JSON.parse(session.metadata?.cart ?? '[]');
@@ -91,12 +92,13 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+
   if (cartItems.length === 0) {
     console.error('❌ Cart is empty in metadata');
     return NextResponse.json({ error: 'Empty cart' }, { status: 400 });
   }
 
-  // NEW — use Stripe's actual charged amounts
+  // Use Stripe's actual charged amounts
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const shippingCost = (session as any).shipping_cost?.amount_total ?? 0;
   const tax = session.total_details?.amount_tax ?? 0;
@@ -104,9 +106,9 @@ export async function POST(req: NextRequest) {
   const total =
     session.amount_total ?? subtotal + shippingCost + tax - discountAmount;
 
-  // Also save discount info on the order
   const discountCode = session.metadata?.discountCode ?? null;
 
+  // Extract shipping address — check both old and new Stripe API field paths
   const addr =
     (session as any).collected_information?.shipping_details?.address ??
     (session as any).shipping_details?.address;
@@ -123,9 +125,7 @@ export async function POST(req: NextRequest) {
     : null;
 
   if (!addr) {
-    console.warn(
-      '⚠️ No shipping address found on session — checked both collected_information.shipping_details.address and shipping_details.address',
-    );
+    console.warn('⚠️ No shipping address found on session');
   }
 
   let order;
@@ -144,9 +144,9 @@ export async function POST(req: NextRequest) {
         subtotal,
         shippingCost,
         tax,
-        discount: discountAmount, // ← add this
-        discountCode: discountCode, // ← add this
-        total, // ← now uses session.amount_total
+        discount: discountAmount,
+        discountCode: discountCode,
+        total,
         items: {
           create: cartItems.map((item) => ({
             quantity: item.quantity,
@@ -155,18 +155,24 @@ export async function POST(req: NextRequest) {
             productId: item.id,
             productName: item.name,
             productSlug: item.slug,
+            // Variant fields — null for products without color/size options
+            variantId: item.variantId ?? null,
+            variantLabel: item.variantLabel ?? null,
           })),
         },
       },
       include: { items: true },
     });
+
     await clearCart(session.customer_details?.email ?? 'unknown@example.com');
     console.log('✅ Order created:', order.id);
 
-    // After order is created, find the customer and award points
+    // Award loyalty points
     const customer = await prisma.customer.findFirst({
       where: { email: session.customer_details?.email ?? '' },
     });
+
+    // Redeem gift card if used
     const giftCardCode = session.metadata?.giftCardCode;
     const giftCardDiscount = parseInt(
       session.metadata?.giftCardDiscount ?? '0',
@@ -174,6 +180,7 @@ export async function POST(req: NextRequest) {
     if (giftCardCode && giftCardDiscount > 0) {
       await redeemGiftCard(giftCardCode, giftCardDiscount, order.id);
     }
+
     if (customer) {
       await awardPointsForOrder(customer.id, order.id, order.total);
     }
@@ -183,20 +190,28 @@ export async function POST(req: NextRequest) {
       data: { orderId: order.id, status: 'PAID' },
     });
 
-    // Decrement stock and collect updated stock levels
-    const updatedProducts = await Promise.all(
+    // ── Decrement variant stock (not product.stock) ──────────
+    // Stock now lives on ProductVariant, not Product.
+    // Each cart item references a specific variantId.
+    const updatedVariants = await Promise.all(
       cartItems.map((item) =>
-        prisma.product.update({
-          where: { id: item.id },
+        prisma.productVariant.update({
+          where: { id: item.variantId },
           data: { stock: { decrement: item.quantity } },
-          select: { id: true, name: true, slug: true, stock: true },
+          select: {
+            id: true,
+            stock: true,
+            productId: true,
+            color: true,
+            size: true,
+            product: { select: { name: true, slug: true } },
+          },
         }),
       ),
     );
-    console.log('✅ Stock decremented');
+    console.log('✅ Variant stock decremented');
 
     // Increment discount code usage count
-    // const discountCodeUsed = session.metadata?.discountCode;
     if (discountCode) {
       await prisma.discountCode.update({
         where: { code: discountCode },
@@ -205,13 +220,29 @@ export async function POST(req: NextRequest) {
       console.log(`✅ Discount code usage incremented: ${discountCode}`);
     }
 
-    // Check for low/out of stock products and alert admin
-    const alertProducts = updatedProducts.filter(
-      (p) => p.stock <= LOW_STOCK_THRESHOLD,
-    );
+    // Check for low/out-of-stock variants and alert admin
+    const alertProducts = updatedVariants
+      .filter((v) => v.stock <= LOW_STOCK_THRESHOLD)
+      .map((v) => {
+        const label =
+          v.color && v.size
+            ? `${v.product.name} (${v.color} / ${v.size})`
+            : v.color
+              ? `${v.product.name} (${v.color})`
+              : v.size
+                ? `${v.product.name} (${v.size})`
+                : v.product.name;
+        return {
+          id: v.productId,
+          name: label,
+          slug: v.product.slug,
+          stock: v.stock,
+        };
+      });
+
     if (alertProducts.length > 0) {
       console.log(
-        `⚠️ ${alertProducts.length} product(s) low/out of stock — sending alert`,
+        `⚠️ ${alertProducts.length} variant(s) low/out of stock — sending alert`,
       );
       await sendLowStockAlert(alertProducts);
     }
@@ -229,7 +260,9 @@ export async function POST(req: NextRequest) {
     customerEmail: order.customerEmail,
     customerName: order.customerName,
     items: order.items.map((item: any) => ({
-      productName: item.productName,
+      productName: item.variantLabel
+        ? `${item.productName} — ${item.variantLabel}`
+        : item.productName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       total: item.total,
@@ -240,5 +273,6 @@ export async function POST(req: NextRequest) {
     total: order.total,
     shippingAddress: shippingAddress,
   });
+
   return NextResponse.json({ received: true });
 }

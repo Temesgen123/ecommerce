@@ -15,8 +15,7 @@ const ProductSchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       'Slug must be lowercase with hyphens only',
     ),
-  // slug intentionally NOT sanitized via sanitizedString — the regex
-  // above already restricts it to a safe character set
+  brand: sanitizedString({ min: 0, max: 100 }).optional(),
   description: sanitizedString({ min: 0, max: 5000 }).optional(),
   price: z.coerce.number().min(0, 'Price must be a positive number'),
   compareAt: z.coerce.number().min(0).optional().nullable(),
@@ -35,7 +34,6 @@ function toCents(dollars: number) {
   return Math.round(dollars * 100);
 }
 
-// Extract image URLs from FormData (images[0], images[1], ...)
 function extractImages(formData: FormData): string[] {
   const images: string[] = [];
   let i = 0;
@@ -55,6 +53,7 @@ export async function createProduct(
   const raw = {
     name: formData.get('name'),
     slug: formData.get('slug'),
+    brand: formData.get('brand') || undefined,
     description: formData.get('description'),
     price: formData.get('price'),
     compareAt: formData.get('compareAt') || null,
@@ -72,13 +71,29 @@ export async function createProduct(
   const images = extractImages(formData);
   const { price, compareAt, ...rest } = parsed.data;
 
+  let createdProduct;
   try {
-    await prisma.product.create({
+    createdProduct = await prisma.product.create({
       data: {
         ...rest,
         price: toCents(price),
         compareAt: compareAt ? toCents(compareAt) : null,
         images,
+      },
+    });
+
+    // Every product needs at least one variant to be purchasable —
+    // create a default (no color/size options) variant automatically,
+    // mirroring the product's own price/stock. Admins can later add
+    // real color/size variants on the edit page, which replaces or
+    // supplements this default as needed.
+    await prisma.productVariant.create({
+      data: {
+        productId: createdProduct.id,
+        color: null,
+        size: null,
+        price: null,
+        stock: parsed.data.stock,
       },
     });
   } catch (e: unknown) {
@@ -90,7 +105,7 @@ export async function createProduct(
   }
 
   revalidatePath('/admin/products');
-  redirect('/admin/products');
+  redirect(`/admin/products/${createdProduct.id}/edit`);
 }
 
 // ─── Update ───────────────────────────────────────────────────
@@ -102,6 +117,7 @@ export async function updateProduct(
   const raw = {
     name: formData.get('name'),
     slug: formData.get('slug'),
+    brand: formData.get('brand') || undefined,
     description: formData.get('description'),
     price: formData.get('price'),
     compareAt: formData.get('compareAt') || null,
@@ -156,4 +172,28 @@ export async function checkSlugAvailable(
   if (!existing) return true;
   if (excludeId && existing.id === excludeId) return true;
   return false;
+}
+
+// Update Stock
+export async function updateStock(
+  productId: string,
+  stock: number,
+  variantId?: string,
+): Promise<void> {
+  if (variantId) {
+    // Update the specific variant's stock
+    await prisma.productVariant.update({
+      where: { id: variantId },
+      data: { stock },
+    });
+  } else {
+    // Legacy fallback — updates the base Product.stock field
+    // (used before variants existed, kept for safety)
+    await prisma.product.update({
+      where: { id: productId },
+      data: { stock },
+    });
+  }
+
+  revalidatePath('/admin/products');
 }

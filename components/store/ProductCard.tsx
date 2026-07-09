@@ -1,11 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
-import { useCartStore } from '@/lib/cart-store';
-import WishlistButton from '@/components/store/WishlistButton';
-import CompareButton from '@/components/store/CompareButton';
+import AddToCartButton from '@/components/store/AddToCartButton';
 
 interface ProductCardProps {
   id: string;
@@ -13,9 +11,16 @@ interface ProductCardProps {
   slug: string;
   price: number;
   compareAt?: number | null;
-  image?: string | null;
+  image: string | null;
   category?: string | null;
-  priority?: boolean; // pass true for above-the-fold cards
+  priority?: boolean;
+  variants?: {
+    id: string;
+    color: string | null;
+    size: string | null;
+    price: number | null;
+    stock: number;
+  }[];
 }
 
 function formatPrice(cents: number) {
@@ -34,97 +39,78 @@ export default function ProductCard({
   image,
   category,
   priority = false,
+  variants = [],
 }: ProductCardProps) {
-  const addItem = useCartStore((s) => s.addItem);
+  const discount =
+    compareAt && compareAt > price
+      ? Math.round(((compareAt - price) / compareAt) * 100)
+      : null;
 
   return (
-    <div className="card group relative flex flex-col overflow-hidden">
+    <div
+      className="group relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
+      style={{
+        background: 'var(--bg-surface)',
+        borderColor: 'var(--border-subtle)',
+      }}
+    >
       {/* Image */}
       <Link
         href={`/products/${slug}`}
-        className="block aspect-square overflow-hidden relative"
-        style={{ background: 'var(--bg-elevated)' }}
+        className="relative block aspect-square overflow-hidden"
       >
-        // Replace the Image component with this:
         {image ? (
           <Image
             src={image}
             alt={name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            loading={priority ? 'eager' : 'lazy'}
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             priority={priority}
-            placeholder="blur"
-            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PC9zdmc+"
-            onError={(e) => {
-              // Hide broken image and show fallback
-              const target = e.currentTarget as HTMLImageElement;
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent) {
-                parent.innerHTML = `
-          <div style="display:flex;height:100%;width:100%;align-items:center;justify-content:center;color:var(--text-muted)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-            </svg>
-          </div>
-        `;
-              }
-            }}
           />
         ) : (
           <div
             className="flex h-full w-full items-center justify-center"
-            style={{ color: 'var(--text-muted)' }}
+            style={{ background: 'var(--bg-elevated)' }}
           >
-            <ShoppingBag className="h-12 w-12 opacity-30" />
+            <ShoppingBag
+              className="h-10 w-10 opacity-20"
+              style={{ color: 'var(--text-muted)' }}
+            />
           </div>
+        )}
+
+        {/* Discount badge */}
+        {discount && (
+          <span
+            className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-xs font-bold"
+            style={{ background: '#ef4444', color: '#fff' }}
+          >
+            -{discount}%
+          </span>
         )}
       </Link>
 
-      {/* Sale badge */}
-      {compareAt && compareAt > price && (
-        <span
-          className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-xs font-bold"
-          style={{ background: 'var(--error-bg)', color: 'var(--error-text)' }}
-        >
-          Sale
-        </span>
-      )}
-
-      {/* Wishlist button */}
-      <div className="absolute right-3 top-3">
-        <div
-          className="rounded-full p-1.5 shadow-sm"
-          style={{ background: 'rgba(255,255,255,0.9)' }}
-        >
-          <WishlistButton productId={id} size="sm" />
-        </div>
-      </div>
-
       {/* Info */}
-      <div className="flex flex-1 flex-col gap-2 p-4">
+      <div className="flex flex-1 flex-col gap-2 p-3">
         {category && (
           <p
-            className="text-xs uppercase tracking-widest font-medium"
-            style={{ color: 'var(--navy-600)' }}
+            className="text-xs font-medium uppercase tracking-wide"
+            style={{ color: 'var(--text-muted)' }}
           >
             {category}
           </p>
         )}
         <Link
           href={`/products/${slug}`}
-          className="text-sm font-semibold leading-snug line-clamp-2 hover:underline"
+          className="text-sm font-semibold leading-snug hover:underline line-clamp-2"
           style={{ color: 'var(--text-primary)' }}
         >
           {name}
         </Link>
-
-        {/* Price row */}
-        <div className="mt-auto flex items-baseline gap-1.5 pt-2">
+        <div className="flex items-baseline gap-2 mt-auto">
           <span
-            className="text-base font-bold"
+            className="text-sm font-bold"
             style={{ color: 'var(--text-primary)' }}
           >
             {formatPrice(price)}
@@ -138,29 +124,17 @@ export default function ProductCard({
             </span>
           )}
         </div>
-
-        {/* Button */}
-        <button
-          onClick={() =>
-            addItem({ id, name, slug, price, image: image ?? null })
-          }
-          className="btn-primary w-full rounded-lg py-2 text-xs font-semibold sm:w-auto sm:px-3 sm:py-1.5"
-        >
-          Add to cart
-        </button>
-        <div className="flex justify-center pt-1">
-          <CompareButton
-            item={{
-              id,
-              name,
-              slug,
-              price,
-              compareAt,
-              image: image ?? null,
-              category: category ?? null,
-            }}
-          />
-        </div>
+        <AddToCartButton
+          product={{
+            id,
+            name,
+            slug,
+            price,
+            image,
+            stock: variants.reduce((sum, v) => sum + v.stock, 0),
+            variants,
+          }}
+        />
       </div>
     </div>
   );

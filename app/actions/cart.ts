@@ -4,48 +4,72 @@ import { prisma } from '@/lib/prisma';
 import { getCustomer } from '@/lib/customer-auth';
 import { revalidatePath } from 'next/cache';
 
-// ─────────────────────────────────────────────
-// These actions sync the logged-in customer's cart to the DB.
-// Call addToCart / updateCartItem / removeFromCart from your
-// existing client-side cart logic (e.g. right after updating
-// local/context state) so the DB always reflects what's in
-// the customer's cart for abandoned-cart detection.
-//
-// If the customer is a guest (not logged in), these no-op —
-// guest carts stay client-side only, as agreed.
-// ─────────────────────────────────────────────
-
 async function getOrCreateCart(customerId: string) {
   return prisma.cart.upsert({
     where: { customerId },
-    update: {}, // touching updatedAt happens via the item write, not here
+    update: {},
     create: { customerId },
   });
 }
 
-export async function addToCart(productId: string, quantity: number = 1) {
+/**
+ * Add a specific variant to the logged-in customer's DB cart.
+ * variantId is now required since CartItem.variantId is non-nullable.
+ * Guests (not logged in) are silently ignored — their cart stays
+ * client-side only (Zustand/localStorage).
+ */
+export async function addToCart(
+  productId: string,
+  quantity: number = 1,
+  variantId?: string,
+) {
   const customer = await getCustomer();
   if (!customer) return { success: false };
+
+  // variantId is required for the new schema.
+  // If not provided (legacy call without variant selection),
+  // look up the default variant for this product (color: null, size: null).
+  let resolvedVariantId = variantId;
+  if (!resolvedVariantId) {
+    const defaultVariant = await prisma.productVariant.findFirst({
+      where: { productId, color: null, size: null },
+      select: { id: true },
+    });
+    if (!defaultVariant) {
+      console.error(
+        `No variant found for product ${productId} — cannot add to cart`,
+      );
+      return { success: false };
+    }
+    resolvedVariantId = defaultVariant.id;
+  }
 
   const cart = await getOrCreateCart(customer.id);
 
   await prisma.cartItem.upsert({
-    where: { cartId_productId: { cartId: cart.id, productId } },
+    where: {
+      cartId_variantId: { cartId: cart.id, variantId: resolvedVariantId },
+    },
     update: { quantity: { increment: quantity } },
-    create: { cartId: cart.id, productId, quantity },
+    create: {
+      cartId: cart.id,
+      productId,
+      variantId: resolvedVariantId,
+      quantity,
+    },
   });
 
   // Bump cart.updatedAt so abandonment is measured from the latest activity
   await prisma.cart.update({
     where: { id: cart.id },
-    data: { updatedAt: new Date(), reminderSentAt: null }, // reset reminder flag on new activity
+    data: { updatedAt: new Date(), reminderSentAt: null },
   });
 
   revalidatePath('/cart');
   return { success: true };
 }
 
-export async function updateCartItem(productId: string, quantity: number) {
+export async function updateCartItem(variantId: string, quantity: number) {
   const customer = await getCustomer();
   if (!customer) return { success: false };
 
@@ -53,13 +77,22 @@ export async function updateCartItem(productId: string, quantity: number) {
 
   if (quantity <= 0) {
     await prisma.cartItem.deleteMany({
-      where: { cartId: cart.id, productId },
+      where: { cartId: cart.id, variantId },
     });
   } else {
     await prisma.cartItem.upsert({
-      where: { cartId_productId: { cartId: cart.id, productId } },
+      where: { cartId_variantId: { cartId: cart.id, variantId } },
       update: { quantity },
-      create: { cartId: cart.id, productId, quantity },
+      create: {
+        cartId: cart.id,
+        // productId is required — look it up from the variant
+        productId: (await prisma.productVariant.findUnique({
+          where: { id: variantId },
+          select: { productId: true },
+        }))!.productId,
+        variantId,
+        quantity,
+      },
     });
   }
 
@@ -72,14 +105,14 @@ export async function updateCartItem(productId: string, quantity: number) {
   return { success: true };
 }
 
-export async function removeFromCart(productId: string) {
+export async function removeFromCart(variantId: string) {
   const customer = await getCustomer();
   if (!customer) return { success: false };
 
   const cart = await getOrCreateCart(customer.id);
 
   await prisma.cartItem.deleteMany({
-    where: { cartId: cart.id, productId },
+    where: { cartId: cart.id, variantId },
   });
 
   revalidatePath('/cart');
@@ -87,9 +120,7 @@ export async function removeFromCart(productId: string) {
 }
 
 /**
- * Call this after a successful order is created (in your Stripe webhook)
- * to clear the cart — this also prevents an abandoned cart email going
- * out for a cart that actually converted.
+ * Called after a successful Stripe order to clear the customer's cart.
  */
 export async function clearCart(customerEmail: string) {
   const customer = await prisma.customer.findUnique({
@@ -101,9 +132,7 @@ export async function clearCart(customerEmail: string) {
 }
 
 /**
- * Load the logged-in customer's cart with product details —
- * use this on your /cart page or wherever you currently read
- * cart state, to hydrate from DB instead of/alongside local state.
+ * Load the logged-in customer's cart with product + variant details.
  */
 export async function getCustomerCart() {
   const customer = await getCustomer();
@@ -113,7 +142,10 @@ export async function getCustomerCart() {
     where: { customerId: customer.id },
     include: {
       items: {
-        include: { product: true },
+        include: {
+          product: true,
+          variant: true,
+        },
       },
     },
   });

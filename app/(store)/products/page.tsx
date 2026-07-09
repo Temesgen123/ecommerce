@@ -94,7 +94,18 @@ export default async function ProductsPage({ searchParams }: Props) {
       orderBy,
       skip,
       take: PER_PAGE,
-      include: { category: { select: { name: true, slug: true } } },
+      include: {
+        category: { select: { name: true, slug: true } },
+        variants: {
+          select: {
+            id: true,
+            color: true,
+            size: true,
+            price: true,
+            stock: true,
+          },
+        },
+      },
     }),
     prisma.product.count({ where }),
     prisma.category.findMany({
@@ -203,6 +214,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                   image={product.images[0] ?? null}
                   category={product.category?.name}
                   priority={index < 4}
+                  variants={(product as any).variants ?? []}
                 />
               ))}
             </div>

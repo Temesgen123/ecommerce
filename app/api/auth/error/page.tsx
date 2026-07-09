@@ -7,7 +7,6 @@ import { ShieldAlert, Home } from 'lucide-react';
 interface Props {
   searchParams: Promise<{ error?: string }>;
 }
-
 const errorMessages: Record<string, { title: string; description: string }> = {
   AccessDenied: {
     title: 'Too many login attempts',

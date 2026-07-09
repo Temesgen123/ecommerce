@@ -4,6 +4,14 @@ import { useState } from 'react';
 import { ShoppingBag, Check } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 
+interface Variant {
+  id: string;
+  color: string | null;
+  size: string | null;
+  price: number | null;
+  stock: number;
+}
+
 interface Props {
   product: {
     id: string;
@@ -12,6 +20,7 @@ interface Props {
     price: number;
     image: string | null;
     stock: number;
+    variants: Variant[];
   };
 }
 
@@ -19,19 +28,41 @@ export default function AddToCartButton({ product }: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
 
+  // Use the first in-stock variant, or just the first variant
+  const defaultVariant =
+    product.variants.find((v) => v.stock > 0) ?? product.variants[0];
+
+  // Effective stock: sum of all variant stocks, or fall back to product.stock
+  const totalStock =
+    product.variants.length > 0
+      ? product.variants.reduce((sum, v) => sum + v.stock, 0)
+      : product.stock;
+
+  // Effective price: variant override or base price
+  const effectivePrice = defaultVariant?.price ?? product.price;
+
+  // Variant label — null for default (no-option) variants
+  const variantLabel =
+    defaultVariant?.color && defaultVariant?.size
+      ? `${defaultVariant.color} / ${defaultVariant.size}`
+      : (defaultVariant?.color ?? defaultVariant?.size ?? null);
+
   function handleAdd() {
+    if (!defaultVariant) return;
     addItem({
       id: product.id,
+      variantId: defaultVariant.id,
+      variantLabel,
       name: product.name,
       slug: product.slug,
-      price: product.price,
+      price: effectivePrice,
       image: product.image,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
 
-  if (product.stock === 0) {
+  if (totalStock === 0) {
     return (
       <button
         disabled

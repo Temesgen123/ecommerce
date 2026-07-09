@@ -78,12 +78,13 @@ export default function CheckoutPage() {
 
   function handleCheckout() {
     startTransition(async () => {
-      await createCheckoutSession(
+      await createCheckoutSession({
         items,
-        appliedGiftCard?.code ?? undefined,
-        appliedGiftCard?.discount ?? undefined,
-        appliedDiscount?.code ?? undefined,
-      );
+        discountCode: appliedDiscount?.code,
+        discountAmount: appliedDiscount?.savings ?? 0,
+        giftCardCode: appliedGiftCard?.code,
+        giftCardDiscount: appliedGiftCard?.discount ?? 0,
+      });
     });
   }
 

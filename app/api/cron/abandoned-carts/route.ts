@@ -6,8 +6,8 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const ABANDONED_AFTER_HOURS = 25;
-const GIVE_UP_AFTER_HOURS = 72; // don't email carts older than 3 days — likely dead/test data
+const ABANDONED_AFTER_HOURS = 2;
+const GIVE_UP_AFTER_HOURS = 72;
 
 function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -22,10 +22,21 @@ function escapeHtml(input: string): string {
     .replace(/'/g, '&#39;');
 }
 
+function buildVariantLabel(
+  variant: {
+    color: string | null;
+    size: string | null;
+  } | null,
+): string | null {
+  if (!variant) return null;
+  if (variant.color && variant.size)
+    return `${variant.color} / ${variant.size}`;
+  if (variant.color) return variant.color;
+  if (variant.size) return variant.size;
+  return null;
+}
+
 export async function GET(request: Request) {
-  // ── Secure the cron endpoint ────────────────────────────
-  // Vercel Cron sends this header automatically; this stops
-  // randoms from hitting the route and spamming your customers.
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,11 +48,6 @@ export async function GET(request: Request) {
   );
   const giveUpCutoff = new Date(now - GIVE_UP_AFTER_HOURS * 60 * 60 * 1000);
 
-  // Find carts that:
-  // - have items
-  // - haven't been touched in ABANDONED_AFTER_HOURS
-  // - aren't older than GIVE_UP_AFTER_HOURS (avoid emailing ancient/dead carts)
-  // - haven't already received a reminder
   const abandonedCarts = await prisma.cart.findMany({
     where: {
       updatedAt: { lte: abandonedCutoff, gte: giveUpCutoff },
@@ -50,7 +56,13 @@ export async function GET(request: Request) {
     },
     include: {
       customer: { select: { email: true, name: true } },
-      items: { include: { product: true } },
+      items: {
+        include: {
+          product: true,
+          // Include variant so we can show color/size in the email
+          variant: { select: { color: true, size: true, price: true } },
+        },
+      },
     },
   });
 
@@ -58,22 +70,25 @@ export async function GET(request: Request) {
   let skipped = 0;
 
   for (const cart of abandonedCarts) {
-    // Skip empty product references (e.g. product was deleted)
     const validItems = cart.items.filter((item) => item.product);
     if (validItems.length === 0) {
       skipped++;
       continue;
     }
 
-    const subtotal = validItems.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0,
-    );
+    const subtotal = validItems.reduce((sum, item) => {
+      // Use variant price if set, otherwise fall back to product base price
+      const effectivePrice = item.variant?.price ?? item.product.price;
+      return sum + effectivePrice * item.quantity;
+    }, 0);
 
     const itemRows = validItems
       .map((item) => {
         const name = escapeHtml(item.product.name);
+        const variantLabel = buildVariantLabel(item.variant ?? null);
         const imageUrl = item.product.images[0] ?? '';
+        const effectivePrice = item.variant?.price ?? item.product.price;
+
         return `
           <tr>
             <td style="padding: 12px 0; border-bottom: 1px solid #eee;">
@@ -81,12 +96,18 @@ export async function GET(request: Request) {
                 <tr>
                   ${
                     imageUrl
-                      ? `<td style="padding-right: 12px;"><img src="${escapeHtml(imageUrl)}" width="56" height="56" style="border-radius: 8px; object-fit: cover;" /></td>`
+                      ? `<td style="padding-right: 12px; vertical-align: top;">
+                           <img src="${escapeHtml(imageUrl)}" width="56" height="56"
+                             style="border-radius: 8px; object-fit: cover;" />
+                         </td>`
                       : ''
                   }
-                  <td>
+                  <td style="vertical-align: top;">
                     <p style="margin: 0; font-weight: 600; color: #1e3a5f;">${name}</p>
-                    <p style="margin: 4px 0 0; font-size: 13px; color: #888;">Qty: ${item.quantity} × ${formatPrice(item.product.price)}</p>
+                    ${variantLabel ? `<p style="margin: 2px 0 0; font-size: 12px; color: #888;">${escapeHtml(variantLabel)}</p>` : ''}
+                    <p style="margin: 4px 0 0; font-size: 13px; color: #888;">
+                      Qty: ${item.quantity} × ${formatPrice(effectivePrice)}
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -119,7 +140,10 @@ export async function GET(request: Request) {
             <p style="font-weight: 600; color: #1e3a5f;">
               Subtotal: ${formatPrice(subtotal)}
             </p>
-            <a href="${storeUrl}/cart" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background: #1e3a5f; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">
+            <a href="${storeUrl}/cart"
+              style="display: inline-block; margin-top: 16px; padding: 12px 24px;
+                     background: #1e3a5f; color: #fff; text-decoration: none;
+                     border-radius: 8px; font-weight: 600;">
               Return to cart
             </a>
             <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />

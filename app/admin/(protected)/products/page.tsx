@@ -4,8 +4,7 @@ import { deleteProduct } from '@/app/actions/products';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { Plus, Pencil, PackageX, ImageOff } from 'lucide-react';
 
-// export const dynamic = 'force-dynamic';
-
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Products' };
 
 function formatPrice(cents: number) {
@@ -18,7 +17,10 @@ function formatPrice(cents: number) {
 export default async function AdminProductsPage() {
   const products = await prisma.product.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { category: { select: { name: true } } },
+    include: {
+      category: { select: { name: true } },
+      variants: { select: { stock: true } },
+    },
   });
 
   return (
@@ -72,6 +74,7 @@ export default async function AdminProductsPage() {
               >
                 <th className="px-4 py-3 w-16">Image</th>
                 <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Brand</th>
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Price</th>
                 <th className="px-4 py-3">Stock</th>
@@ -84,150 +87,179 @@ export default async function AdminProductsPage() {
               className="divide-y"
               style={{ borderColor: 'var(--border-subtle)' }}
             >
-              {products.map((product: any) => (
-                <tr
-                  key={product.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  {/* Thumbnail */}
-                  <td className="px-4 py-3">
-                    <div
-                      className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg"
-                      style={{ background: 'var(--bg-elevated)' }}
-                    >
-                      {product.images[0] ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="flex h-full w-full items-center justify-center"
-                          style={{ color: 'var(--text-muted)' }}
-                        >
-                          <ImageOff className="h-4 w-4 opacity-40" />
-                        </div>
-                      )}
-                    </div>
-                  </td>
+              {products.map((product: any) => {
+                // Total stock = sum across all variants.
+                // Falls back to product.stock if no variants exist yet
+                // (during the brief window before backfill-default-variants runs).
+                const totalStock =
+                  product.variants.length > 0
+                    ? product.variants.reduce(
+                        (sum: number, v: { stock: number }) => sum + v.stock,
+                        0,
+                      )
+                    : product.stock;
 
-                  {/* Name + slug */}
-                  <td className="px-4 py-3">
-                    <p
-                      className="font-semibold"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {product.name}
-                    </p>
-                    <p
-                      className="text-xs font-mono mt-0.5"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {product.slug}
-                    </p>
-                    {product.images.length > 1 && (
-                      <p
-                        className="text-xs mt-0.5"
-                        style={{ color: 'var(--navy-600)' }}
-                      >
-                        {product.images.length} images
-                      </p>
-                    )}
-                  </td>
-
-                  <td
-                    className="px-4 py-3"
-                    style={{ color: 'var(--text-secondary)' }}
+                return (
+                  <tr
+                    key={product.id}
+                    className="hover:bg-gray-50 transition-colors"
                   >
-                    {product.category?.name ?? (
-                      <span style={{ color: 'var(--text-muted)' }}>—</span>
-                    )}
-                  </td>
+                    {/* Thumbnail */}
+                    <td className="px-4 py-3">
+                      <div
+                        className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg"
+                        style={{ background: 'var(--bg-elevated)' }}
+                      >
+                        {product.images[0] ? (
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="flex h-full w-full items-center justify-center"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            <ImageOff className="h-4 w-4 opacity-40" />
+                          </div>
+                        )}
+                      </div>
+                    </td>
 
-                  <td className="px-4 py-3">
-                    <div>
-                      <span
+                    {/* Name + slug */}
+                    <td className="px-4 py-3">
+                      <p
                         className="font-semibold"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        {formatPrice(product.price)}
-                      </span>
-                      {product.compareAt && (
-                        <span
-                          className="ml-2 text-xs line-through"
-                          style={{ color: 'var(--text-muted)' }}
-                        >
-                          {formatPrice(product.compareAt)}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <span
-                      className={
-                        product.stock === 0
-                          ? 'font-semibold text-red-500'
-                          : product.stock < 10
-                            ? 'font-semibold text-yellow-600'
-                            : ''
-                      }
-                      style={
-                        product.stock >= 10
-                          ? { color: 'var(--text-primary)' }
-                          : {}
-                      }
-                    >
-                      {product.stock}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <span
-                      className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                      style={
-                        product.published
-                          ? {
-                              background: 'var(--success-bg)',
-                              color: 'var(--success-text)',
-                            }
-                          : {
-                              background: 'var(--bg-elevated)',
-                              color: 'var(--text-muted)',
-                            }
-                      }
-                    >
-                      {product.published ? 'Published' : 'Draft'}
-                    </span>
-                  </td>
-
-                  <td
-                    className="px-4 py-3 text-xs font-medium"
-                    style={{
-                      color: product.featured
-                        ? 'var(--warning-text)'
-                        : 'var(--text-muted)',
-                    }}
-                  >
-                    {product.featured ? '★ Yes' : '—'}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link
-                        href={`/admin/products/${product.id}`}
-                        className="rounded-lg p-1.5 transition-colors hover:bg-gray-100"
+                        {product.name}
+                      </p>
+                      <p
+                        className="text-xs font-mono mt-0.5"
                         style={{ color: 'var(--text-muted)' }}
-                        title="Edit"
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Link>
-                      <DeleteButton id={product.id} name={product.name} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {product.slug}
+                      </p>
+                      {product.variants.length > 1 && (
+                        <p
+                          className="text-xs mt-0.5"
+                          style={{ color: 'var(--navy-600)' }}
+                        >
+                          {product.variants.length} variants
+                        </p>
+                      )}
+                    </td>
+
+                    {/* Brand */}
+                    <td
+                      className="px-4 py-3 text-sm"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {product.brand ?? (
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      )}
+                    </td>
+
+                    {/* Category */}
+                    <td
+                      className="px-4 py-3"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {product.category?.name ?? (
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      )}
+                    </td>
+
+                    {/* Price */}
+                    <td className="px-4 py-3">
+                      <div>
+                        <span
+                          className="font-semibold"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {formatPrice(product.price)}
+                        </span>
+                        {product.compareAt && (
+                          <span
+                            className="ml-2 text-xs line-through"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            {formatPrice(product.compareAt)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Stock — total across all variants */}
+                    <td className="px-4 py-3">
+                      <span
+                        className={
+                          totalStock === 0
+                            ? 'font-semibold text-red-500'
+                            : totalStock < 10
+                              ? 'font-semibold text-yellow-600'
+                              : ''
+                        }
+                        style={
+                          totalStock >= 10
+                            ? { color: 'var(--text-primary)' }
+                            : {}
+                        }
+                      >
+                        {totalStock}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <span
+                        className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                        style={
+                          product.published
+                            ? {
+                                background: 'var(--success-bg)',
+                                color: 'var(--success-text)',
+                              }
+                            : {
+                                background: 'var(--bg-elevated)',
+                                color: 'var(--text-muted)',
+                              }
+                        }
+                      >
+                        {product.published ? 'Published' : 'Draft'}
+                      </span>
+                    </td>
+
+                    {/* Featured */}
+                    <td
+                      className="px-4 py-3 text-xs font-medium"
+                      style={{
+                        color: product.featured
+                          ? 'var(--warning-text)'
+                          : 'var(--text-muted)',
+                      }}
+                    >
+                      {product.featured ? '★ Yes' : '—'}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/admin/products/${product.id}/edit`}
+                          className="rounded-lg p-1.5 transition-colors hover:bg-gray-100"
+                          style={{ color: 'var(--text-muted)' }}
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                        <DeleteButton id={product.id} name={product.name} />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -30,55 +30,55 @@ export const metadata: Metadata = {
 // Format: cloud_name comes from your own Cloudinary account.
 const CATEGORY_IMAGES: Record<string, string> = {
   electronics:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/electronics.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900350/categories/electronics.jpg',
   computers:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/computers.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900352/categories/computers.jpg',
   smartphones:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/smartphones.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1783231188/categories/smartphones.jpg',
   apparel:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/apparel.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900357/categories/apparel.jpg',
   shoes:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/shoes.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900359/categories/shoes.jpg',
   accessories:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/accessories.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1783231194/categories/accessories.jpg',
   'home-goods':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/home-goods.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1783231196/categories/home-goods.jpg',
   kitchen:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/kitchen.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900365/categories/kitchen.jpg',
   books:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/books.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900367/categories/books.jpg',
   'sports-outdoors':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/sports-outdoors.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900368/categories/sports-outdoors.jpg',
   'toys-games':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/toys-games.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900371/categories/toys-games.jpg',
   beauty:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/beauty.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900373/categories/beauty.jpg',
   'tools-diy':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/tools-diy.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1783231208/categories/tools-diy.jpg',
   'pet-supplies':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/pet-supplies.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1783231210/categories/pet-supplies.jpg',
   gaming:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/gaming.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1783231212/categories/gaming.jpg',
   garden:
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/garden.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900384/categories/garden.jpg',
   'health-pharmacy':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/health-pharmacy.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900387/categories/health-wellness.jpg',
   'health-wellness':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/health-wellness.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900387/categories/health-wellness.jpg',
   'musical-instruments':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/musical-instruments.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900388/categories/musical-instruments.jpg',
   'travel-luggage':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/travel-luggage.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900390/categories/travel-luggage.jpg',
   'office-supplies':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/office-supplies.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900392/categories/office-supplies.jpg',
   'baby-kids':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/baby-kids.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1783231224/categories/baby-kids.jpg',
   'auto-parts-accessories':
-    'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/auto-parts-accessories.jpg',
+    'https://res.cloudinary.com/deiqvcg5b/image/upload/v1781900395/categories/auto-parts-accessories.jpg',
 };
 
 const FALLBACK_IMAGE =
-  'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/fallback.jpg';
+  'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/categories/fallback.jpg';
 
 export default async function HomePage() {
   const [featured, newArrivals, categories] = await Promise.all([
@@ -86,13 +86,35 @@ export default async function HomePage() {
       where: { published: true, featured: true },
       orderBy: { createdAt: 'desc' },
       take: 4,
-      include: { category: { select: { name: true } } },
+      include: {
+        category: { select: { name: true } },
+        variants: {
+          select: {
+            id: true,
+            color: true,
+            size: true,
+            price: true,
+            stock: true,
+          },
+        },
+      },
     }),
     prisma.product.findMany({
       where: { published: true },
       orderBy: { createdAt: 'desc' },
       take: 4,
-      include: { category: { select: { name: true } } },
+      include: {
+        category: { select: { name: true } },
+        variants: {
+          select: {
+            id: true,
+            color: true,
+            size: true,
+            price: true,
+            stock: true,
+          },
+        },
+      },
     }),
     prisma.category.findMany({
       orderBy: { name: 'asc' },
@@ -136,7 +158,7 @@ export default async function HomePage() {
             className="absolute inset-0 opacity-5"
             style={{
               backgroundImage:
-                'linear-gradient(rgba(225, 255, 255, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
+                'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
               backgroundSize: '40px 40px',
             }}
           />
@@ -144,7 +166,7 @@ export default async function HomePage() {
             className="absolute -top-20 left-1/2 -translate-x-1/2 h-80 w-80 rounded-full blur-3xl opacity-20"
             style={{ background: 'var(--accent)' }}
           />
-          <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-12">
+          <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left — text content */}
               <div>
@@ -371,6 +393,7 @@ export default async function HomePage() {
                   image={product.images[0] ?? null}
                   category={product.category?.name}
                   priority={index < 4}
+                  variants={product.variants ?? []}
                 />
               ))}
             </div>
@@ -415,6 +438,7 @@ export default async function HomePage() {
                   image={product.images[0] ?? null}
                   category={product.category?.name}
                   priority={index < 4}
+                  variants={product.variants ?? []}
                 />
               ))}
             </div>

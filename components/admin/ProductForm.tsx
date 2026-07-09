@@ -19,6 +19,7 @@ interface ProductFormProps {
     name?: string;
     slug?: string;
     description?: string;
+    brand?: string;
     price?: number;
     compareAt?: number | null;
     stock?: number;
@@ -70,8 +71,6 @@ export default function ProductForm({
 
   // Wrap the action to inject image URLs into FormData
   async function handleSubmit(formData: FormData) {
-    // Remove any stale image hidden fields from ImageUploader
-    // and replace with the current images state
     images.forEach((url, i) => formData.set(`images[${i}]`, url));
     return action(state, formData);
   }
@@ -148,6 +147,15 @@ export default function ProductForm({
           />
         </Field>
 
+        <Field label="Brand" hint="Optional" error={err.brand?.[0]}>
+          <input
+            name="brand"
+            defaultValue={defaultValues.brand ?? ''}
+            placeholder="e.g. Acme Co"
+            className={input(!!err.brand)}
+          />
+        </Field>
+
         <Field label="Description" error={err.description?.[0]}>
           <textarea
             name="description"
@@ -170,6 +178,11 @@ export default function ProductForm({
         >
           Pricing
         </h2>
+        <p className="text-xs -mt-2" style={{ color: 'var(--text-muted)' }}>
+          This is the base/display price. If this product has variants
+          (color/size), each variant can optionally override this price — manage
+          that after creating the product.
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Price (USD)" error={err.price?.[0]}>
             <div className="relative">
@@ -227,6 +240,10 @@ export default function ProductForm({
         >
           Inventory
         </h2>
+        <p className="text-xs -mt-2" style={{ color: 'var(--text-muted)' }}>
+          Base/display stock. If this product has variants, actual purchasable
+          stock is tracked per color/size combination instead.
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Stock" error={err.stock?.[0]}>
             <input

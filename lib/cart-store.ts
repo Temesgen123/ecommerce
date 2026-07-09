@@ -3,10 +3,12 @@ import { persist } from 'zustand/middleware';
 import { addToCart, updateCartItem, removeFromCart } from '@/app/actions/cart';
 
 export interface CartItem {
-  id: string;
+  id: string; // productId
+  variantId: string; // productVariant.id — the actual cart key
+  variantLabel: string | null; // e.g. "Blue / Large", null if no options
   name: string;
   slug: string;
-  price: number; // cents
+  price: number; // cents — effective price (variant override or base)
   image: string | null;
   quantity: number;
 }
@@ -17,8 +19,8 @@ interface CartState {
 
   // Actions
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  removeItem: (variantId: string) => void;
+  updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -28,27 +30,23 @@ interface CartState {
   totalPrice: () => number;
 }
 
-// Fire-and-forget sync to DB — only matters for logged-in customers.
-// getCustomer() inside these server actions returns null for guests,
-// in which case addToCart/updateCartItem/removeFromCart just no-op
-// server-side, so it's always safe to call this for every visitor.
-// Errors are swallowed here on purpose: a failed sync should never
-// block or disrupt the local cart UX, which is the source of truth
-// for what the customer sees.
-function syncAdd(productId: string) {
-  addToCart(productId, 1).catch((err) =>
+// Fire-and-forget DB sync helpers.
+// Cart is now keyed by variantId, not productId — a customer can
+// have the same product twice (different variants) in their cart.
+function syncAdd(productId: string, variantId: string) {
+  addToCart(productId, 1, variantId).catch((err) =>
     console.error('Cart sync (add) failed:', err),
   );
 }
 
-function syncUpdate(productId: string, quantity: number) {
-  updateCartItem(productId, quantity).catch((err) =>
+function syncUpdate(variantId: string, quantity: number) {
+  updateCartItem(variantId, quantity).catch((err) =>
     console.error('Cart sync (update) failed:', err),
   );
 }
 
-function syncRemove(productId: string) {
-  removeFromCart(productId).catch((err) =>
+function syncRemove(variantId: string) {
+  removeFromCart(variantId).catch((err) =>
     console.error('Cart sync (remove) failed:', err),
   );
 }
@@ -60,11 +58,17 @@ export const useCartStore = create<CartState>()(
       isOpen: false,
 
       addItem: (newItem) => {
-        const existing = get().items.find((i) => i.id === newItem.id);
+        // Cart is keyed by variantId, not productId — so two different
+        // color/size combos of the same product are distinct cart lines.
+        const existing = get().items.find(
+          (i) => i.variantId === newItem.variantId,
+        );
         if (existing) {
           set((state) => ({
             items: state.items.map((i) =>
-              i.id === newItem.id ? { ...i, quantity: i.quantity + 1 } : i,
+              i.variantId === newItem.variantId
+                ? { ...i, quantity: i.quantity + 1 }
+                : i,
             ),
             isOpen: true,
           }));
@@ -74,25 +78,27 @@ export const useCartStore = create<CartState>()(
             isOpen: true,
           }));
         }
-        syncAdd(newItem.id);
+        syncAdd(newItem.id, newItem.variantId);
       },
 
-      removeItem: (id) => {
+      removeItem: (variantId) => {
         set((state) => ({
-          items: state.items.filter((i) => i.id !== id),
+          items: state.items.filter((i) => i.variantId !== variantId),
         }));
-        syncRemove(id);
+        syncRemove(variantId);
       },
 
-      updateQuantity: (id, quantity) => {
+      updateQuantity: (variantId, quantity) => {
         if (quantity < 1) {
-          get().removeItem(id);
+          get().removeItem(variantId);
           return;
         }
         set((state) => ({
-          items: state.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+          items: state.items.map((i) =>
+            i.variantId === variantId ? { ...i, quantity } : i,
+          ),
         }));
-        syncUpdate(id, quantity);
+        syncUpdate(variantId, quantity);
       },
 
       clearCart: () => set({ items: [] }),
@@ -105,7 +111,6 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'cart-storage',
-      // Only persist items, not UI state
       partialize: (state) => ({ items: state.items }),
     },
   ),
