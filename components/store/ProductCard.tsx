@@ -124,7 +124,7 @@ export default function ProductCard({
             </span>
           )}
         </div>
-        <AddToCartButton
+        {/* <AddToCartButton
           product={{
             id,
             name,
@@ -134,7 +134,13 @@ export default function ProductCard({
             stock: variants.reduce((sum, v) => sum + v.stock, 0),
             variants,
           }}
-        />
+        /> */}
+        <Link
+          href={`/products/${slug}`}
+          className=" btn-primary flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-bold transition-all duration-200"
+        >
+          Buy
+        </Link>
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
+import { toggleWishlistItem } from '@/app/actions/wishlist';
 
 interface Variant {
   id: string;
@@ -70,6 +71,8 @@ export default function ProductDetail({
   isWishlisted,
 }: ProductDetailProps) {
   const [currentImage, setCurrentImage] = useState(0);
+  const [wishlisted, setWishlisted] = useState(isWishlisted);
+  const [wishlistPending, setWishlistPending] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     product.variants.find((v) => v.stock > 0)?.id ??
       product.variants[0]?.id ??
@@ -110,7 +113,7 @@ export default function ProductDetail({
       : null;
 
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-  console.log('variants:', product.variants);
+
   function selectColor(color: string) {
     setVariantError(null);
     const match = product.variants.find(
@@ -132,23 +135,18 @@ export default function ProductDetail({
   }
 
   function handleAddToCart() {
-    console.log('handleAddToCart called', {
-      selectedVariantId,
-      selectedVariant,
-      inStock,
-    });
     if (!selectedVariantId || !selectedVariant) {
       setVariantError('Please select a variant.');
       return;
     }
-    if (!inStock) {
-      setVariantError('This variant is out of stock.');
+    if (selectedVariant.stock <= 0) {
+      setVariantError('This item is out of stock.');
       return;
     }
     addItem({
       id: product.id,
       variantId: selectedVariantId,
-      variantLabel: variantLabel(selectedVariant),
+      variantLabel: hasOptions ? variantLabel(selectedVariant) : null,
       name: product.name,
       slug: product.slug,
       price: effectivePrice,
@@ -163,6 +161,19 @@ export default function ProductDetail({
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleWishlist() {
+    if (wishlistPending) return;
+    setWishlistPending(true);
+    setWishlisted((prev) => !prev); // optimistic update
+    try {
+      await toggleWishlistItem(product.id);
+    } catch {
+      setWishlisted((prev) => !prev); // revert on error
+    } finally {
+      setWishlistPending(false);
+    }
   }
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -504,7 +515,7 @@ export default function ProductDetail({
           <button
             onClick={handleAddToCart}
             disabled={!inStock && hasOptions}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-base font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               background: addedToCart ? '#16a34a' : 'var(--accent)',
               color: '#fff',
@@ -549,7 +560,7 @@ export default function ProductDetail({
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
-                  className="h-3 w-3 text-blue-600"
+                  className="h-4 w-4 text-blue-600"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -565,7 +576,7 @@ export default function ProductDetail({
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
-                  className="h-3 w-3"
+                  className="h-4 w-4"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -581,7 +592,7 @@ export default function ProductDetail({
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
-                  className="h-3 w-3 text-green-500"
+                  className="h-4 w-4 text-green-500"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -598,7 +609,7 @@ export default function ProductDetail({
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
-                  className="h-3 w-3 text-red-600"
+                  className="h-4 w-4 text-red-600"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -612,10 +623,10 @@ export default function ProductDetail({
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 {copied ? (
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-4 w-4 text-green-500" />
                 ) : (
                   <Copy
-                    className="h-3 w-3"
+                    className="h-4 w-4"
                     style={{ color: 'var(--text-muted)' }}
                   />
                 )}
@@ -626,16 +637,15 @@ export default function ProductDetail({
 
           {/* Wishlist */}
           <button
-            className="flex items-center gap-2 text-sm font-medium transition-colors"
+            onClick={handleWishlist}
+            disabled={wishlistPending}
+            className="flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
             style={{
-              color: isWishlisted ? '#ef4444' : 'var(--text-muted)',
+              color: wishlisted ? '#ef4444' : 'var(--text-muted)',
             }}
           >
-            <Heart
-              className="h-4 w-4"
-              fill={isWishlisted ? '#ef4444' : 'none'}
-            />
-            {isWishlisted ? 'Saved to Wishlist' : 'Save to Wishlist'}
+            <Heart className="h-4 w-4" fill={wishlisted ? '#ef4444' : 'none'} />
+            {wishlisted ? 'Saved to Wishlist' : 'Save to Wishlist'}
           </button>
         </div>
       </div>

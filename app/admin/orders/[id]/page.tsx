@@ -384,6 +384,14 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                   >
                     {item.productName}
                   </p>
+                  {(item as any).variantLabel && (
+                    <p
+                      className="text-xs mt-0.5 font-medium"
+                      style={{ color: 'var(--navy-600)' }}
+                    >
+                      {(item as any).variantLabel}
+                    </p>
+                  )}
                   <p
                     className="text-xs font-mono mt-0.5"
                     style={{ color: 'var(--text-muted)' }}
