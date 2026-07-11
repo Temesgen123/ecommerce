@@ -425,7 +425,7 @@ export default function ProductDetail({
                           key={color}
                           onClick={() => selectColor(color)}
                           disabled={!hasStock}
-                          className="rounded-lg border px-4 py-1.5 text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
+                          className="rounded-lg border px-4 py-0 text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
                           style={{
                             borderColor: isSelected
                               ? 'var(--accent)'
@@ -476,7 +476,7 @@ export default function ProductDetail({
                           key={size}
                           onClick={() => selectSize(size)}
                           disabled={!hasStock}
-                          className="min-w-[44px] rounded-lg border px-3 py-1.5 text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
+                          className="min-w-[44px] rounded-lg border px-3 py-0 text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
                           style={{
                             borderColor: isSelected
                               ? 'var(--accent)'
@@ -515,7 +515,7 @@ export default function ProductDetail({
           <button
             onClick={handleAddToCart}
             disabled={!inStock && hasOptions}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-base font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               background: addedToCart ? '#16a34a' : 'var(--accent)',
               color: '#fff',
@@ -551,12 +551,12 @@ export default function ProductDetail({
             >
               Share
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1">
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -572,7 +572,7 @@ export default function ProductDetail({
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -588,7 +588,7 @@ export default function ProductDetail({
                 href={`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -605,7 +605,7 @@ export default function ProductDetail({
                 href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent(shareText)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -619,7 +619,7 @@ export default function ProductDetail({
               </a>
               <button
                 onClick={handleCopyLink}
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 {copied ? (
@@ -639,7 +639,7 @@ export default function ProductDetail({
           <button
             onClick={handleWishlist}
             disabled={wishlistPending}
-            className="flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 hover:bg-gray-300"
             style={{
               color: wishlisted ? '#ef4444' : 'var(--text-muted)',
             }}

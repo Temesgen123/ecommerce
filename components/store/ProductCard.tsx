@@ -137,9 +137,9 @@ export default function ProductCard({
         /> */}
         <Link
           href={`/products/${slug}`}
-          className=" btn-primary flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-bold transition-all duration-200"
+          className=" btn-primary flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all duration-200 hover:opacity-80"
         >
-          Buy
+          View Details
         </Link>
       </div>
     </div>
