@@ -148,7 +148,7 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="space-y-0">
+      <div className="space-y-0  sm:-mt-8">
         {/* Hero */}
         <section
           className="relative overflow-hidden"
