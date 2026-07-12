@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useRecentlyViewedStore } from '@/lib/recently-viewed-store';
 import {
   ShoppingBag,
   Heart,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import { toggleWishlistItem } from '@/app/actions/wishlist';
+import ReviewForm from '@/components/store/ReviewForm';
 
 interface Variant {
   id: string;
@@ -50,6 +52,9 @@ interface ProductDetailProps {
     _count: { reviews: number };
   };
   isWishlisted: boolean;
+  customerEmail?: string | null;
+  customerName?: string | null;
+  isVerifiedBuyer?: boolean;
 }
 
 function formatPrice(cents: number) {
@@ -69,6 +74,9 @@ function variantLabel(v: Variant): string {
 export default function ProductDetail({
   product,
   isWishlisted,
+  customerEmail,
+  customerName,
+  isVerifiedBuyer = false,
 }: ProductDetailProps) {
   const [currentImage, setCurrentImage] = useState(0);
   const [wishlisted, setWishlisted] = useState(isWishlisted);
@@ -84,6 +92,27 @@ export default function ProductDetail({
 
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
+
+  const addRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
+
+  useEffect(() => {
+    addRecentlyViewed({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      compareAt: product.compareAt,
+      image: product.images[0] ?? null,
+      category: product.category?.name ?? null,
+      variants: product.variants.map((v) => ({
+        id: v.id,
+        color: v.color,
+        size: v.size,
+        price: v.price,
+        stock: v.stock,
+      })),
+    });
+  }, [product.id]);
 
   const selectedVariant =
     product.variants.find((v) => v.id === selectedVariantId) ?? null;
@@ -651,65 +680,84 @@ export default function ProductDetail({
       </div>
 
       {/* ── Reviews ─────────────────────────────────────── */}
-      {product.reviews.length > 0 && (
-        <div className="mt-16 space-y-6">
-          <h2 className="text-xl font-bold">
-            Customer Reviews ({product._count.reviews})
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {product.reviews.map((review) => (
-              <div
-                key={review.id}
-                className="rounded-xl border p-5 space-y-2"
-                style={{
-                  background: 'var(--bg-surface)',
-                  borderColor: 'var(--border-subtle)',
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className="h-3.5 w-3.5"
-                        style={{
-                          fill:
-                            star <= review.rating ? '#f59e0b' : 'transparent',
-                          color:
-                            star <= review.rating
-                              ? '#f59e0b'
-                              : 'var(--border-base)',
-                        }}
-                      />
-                    ))}
-                  </div>
-                  {review.verifiedPurchase && (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                      style={{ background: '#dcfce7', color: '#16a34a' }}
-                    >
-                      ✓ Verified
-                    </span>
-                  )}
-                </div>
-                {review.title && (
-                  <p className="text-sm font-semibold">{review.title}</p>
-                )}
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: 'var(--text-secondary)' }}
+      <div className="mt-16 space-y-10">
+        {product.reviews.length > 0 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold">
+              Customer Reviews ({product._count.reviews})
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {product.reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="rounded-xl border p-5 space-y-2"
+                  style={{
+                    background: 'var(--bg-surface)',
+                    borderColor: 'var(--border-subtle)',
+                  }}
                 >
-                  {review.body}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {review.authorName} ·{' '}
-                  {new Date(review.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className="h-3.5 w-3.5"
+                          style={{
+                            fill:
+                              star <= review.rating ? '#f59e0b' : 'transparent',
+                            color:
+                              star <= review.rating
+                                ? '#f59e0b'
+                                : 'var(--border-base)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {review.verifiedPurchase && (
+                      <span
+                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style={{ background: '#dcfce7', color: '#16a34a' }}
+                      >
+                        ✓ Verified
+                      </span>
+                    )}
+                  </div>
+                  {review.title && (
+                    <p className="text-sm font-semibold">{review.title}</p>
+                  )}
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {review.body}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {review.authorName} ·{' '}
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Write a review */}
+        <div
+          className="rounded-2xl border p-6 space-y-4"
+          style={{
+            borderColor: 'var(--border-subtle)',
+            background: 'var(--bg-surface)',
+          }}
+        >
+          <h2 className="text-xl font-bold">Write a Review</h2>
+          <ReviewForm
+            productId={product.id}
+            customerEmail={customerEmail}
+            customerName={customerName}
+            isVerifiedBuyer={isVerifiedBuyer}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 }

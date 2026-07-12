@@ -9,6 +9,13 @@ export interface RecentlyViewedItem {
   compareAt?: number | null;
   image: string | null;
   category: string | null;
+  variants: {
+    id: string;
+    color: string | null;
+    size: string | null;
+    price: number | null;
+    stock: number;
+  }[];
 }
 
 interface RecentlyViewedState {

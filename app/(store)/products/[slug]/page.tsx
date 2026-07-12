@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getCustomer } from '@/lib/customer-auth';
 import ProductDetail from '@/components/store/ProductDedtail';
+import RelatedProducts from '@/components/store/RelatedProducts';
+import RecentlyViewed from '@/components/store/RecentlyViewed';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +38,6 @@ export default async function ProductDetailPage({ params }: Props) {
     where: { slug, published: true },
     include: {
       category: { select: { name: true, slug: true } },
-      // Variants sorted so colors group together, sizes sort naturally
       variants: {
         orderBy: [{ color: 'asc' }, { size: 'asc' }],
       },
@@ -50,7 +51,6 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) notFound();
 
-  // Check if this product is in the customer's wishlist
   const isWishlisted = customer
     ? !!(await prisma.wishlist.findUnique({
         where: {
@@ -62,5 +62,30 @@ export default async function ProductDetailPage({ params }: Props) {
       }))
     : false;
 
-  return <ProductDetail product={product as any} isWishlisted={isWishlisted} />;
+  // Check if customer has purchased this product (for verified buyer badge)
+  const isVerifiedBuyer = customer
+    ? !!(await prisma.orderItem.findFirst({
+        where: {
+          productId: product.id,
+          order: {
+            customerEmail: customer.email,
+            status: { not: 'CANCELLED' },
+          },
+        },
+      }))
+    : false;
+
+  return (
+    <>
+      <ProductDetail
+        product={product as any}
+        isWishlisted={isWishlisted}
+        customerEmail={customer?.email ?? null}
+        customerName={customer?.name ?? null}
+        isVerifiedBuyer={isVerifiedBuyer}
+      />
+      <RelatedProducts productId={product.id} categoryId={product.categoryId} />
+      <RecentlyViewed currentProductId={product.id} />
+    </>
+  );
 }

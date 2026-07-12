@@ -43,6 +43,7 @@ export default function RecentlyViewed({ currentProductId }: Props) {
             compareAt={item.compareAt}
             image={item.image}
             category={item.category}
+            variants={item.variants ?? []}
           />
         ))}
       </div>

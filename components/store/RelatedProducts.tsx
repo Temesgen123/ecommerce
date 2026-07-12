@@ -27,7 +27,7 @@ export default async function RelatedProducts({
   if (related.length === 0) return null;
 
   return (
-    <div className="mt-16 space-y-6">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6  mt-16 space-y-6">
       <div style={{ borderTop: '2px solid var(--border-subtle)' }} />
       <div className="flex items-center justify-between">
         <h2
