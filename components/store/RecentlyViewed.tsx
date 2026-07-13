@@ -25,7 +25,7 @@ export default function RecentlyViewed({ currentProductId }: Props) {
   if (filtered.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <h2
         className="text-xl font-bold mb-6"
         style={{ color: 'var(--text-primary)' }}

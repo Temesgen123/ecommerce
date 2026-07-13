@@ -21,13 +21,13 @@ export default async function RelatedProducts({
     },
     orderBy: { featured: 'desc' },
     take: 4,
-    include: { category: { select: { name: true } } },
+    include: { category: { select: { slug: true } } },
   });
 
   if (related.length === 0) return null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6  mt-16 space-y-6">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6  mt-8 space-y-6">
       <div style={{ borderTop: '2px solid var(--border-subtle)' }} />
       <div className="flex items-center justify-between">
         <h2
@@ -38,7 +38,7 @@ export default async function RelatedProducts({
         </h2>
         {categoryId && (
           <Link
-            href={`/products?category=${related[0]?.category?.name ? encodeURIComponent(related[0].category.name) : ''}`}
+            href={`/products?category=${related[0]?.category?.slug ? encodeURIComponent(related[0].category.slug) : ''}`}
             className="text-sm font-medium transition-colors"
             style={{ color: 'var(--navy-700)' }}
           >
