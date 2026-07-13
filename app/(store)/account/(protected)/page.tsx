@@ -98,10 +98,6 @@ export default async function AccountPage() {
             </p>
           </Link>
         ))}
-        {/* <Link href="/account/loyalty">
-          <Star className="h-4 w-4" />
-          Loyalty Points
-        </Link> */}
       </div>
       <div
         className="rounded-xl border overflow-hidden"

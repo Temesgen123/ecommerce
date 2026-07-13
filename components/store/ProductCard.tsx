@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
-import AddToCartButton from '@/components/store/AddToCartButton';
+import CompareButton from '@/components/store/CompareButton';
 
 interface ProductCardProps {
   id: string;
@@ -124,23 +124,23 @@ export default function ProductCard({
             </span>
           )}
         </div>
-        {/* <AddToCartButton
-          product={{
-            id,
-            name,
-            slug,
-            price,
-            image,
-            stock: variants.reduce((sum, v) => sum + v.stock, 0),
-            variants,
-          }}
-        /> */}
         <Link
           href={`/products/${slug}`}
           className=" btn-primary flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all duration-200 hover:opacity-80"
         >
           View Details
         </Link>
+        <CompareButton
+          item={{
+            id,
+            name,
+            slug,
+            price,
+            compareAt,
+            image,
+            category: category ?? null,
+          }}
+        />
       </div>
     </div>
   );

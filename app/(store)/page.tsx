@@ -25,8 +25,6 @@ export const metadata: Metadata = {
   alternates: { canonical: baseUrl },
 };
 
-// Replace each URL below with the corresponding value from
-// prisma/category-images.json after running fetch-category-images.ts.
 // Format: cloud_name comes from your own Cloudinary account.
 const CATEGORY_IMAGES: Record<string, string> = {
   electronics:
