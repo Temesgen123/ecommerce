@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { RefreshCw } from 'lucide-react';
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
