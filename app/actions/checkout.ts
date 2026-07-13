@@ -1,7 +1,6 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 

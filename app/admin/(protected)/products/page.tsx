@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { deleteProduct } from '@/app/actions/products';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { Plus, Pencil, PackageX, ImageOff } from 'lucide-react';
 

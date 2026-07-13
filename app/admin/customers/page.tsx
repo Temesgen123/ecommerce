@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma';
-import type { Metadata } from 'next';
 import AdminCustomersClient from '@/components/admin/AdminCustomersClient';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Customers' };
