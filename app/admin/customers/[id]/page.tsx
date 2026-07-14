@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import AdminLoyaltyAdjust from '@/components/admin/AdminLoyaltyAdjust';
 
+export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Customer Detail' };
 
 function formatPrice(cents: number) {

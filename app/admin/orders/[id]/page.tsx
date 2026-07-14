@@ -271,10 +271,10 @@ export default async function AdminOrderDetailPage({ params }: Props) {
           orderId={order.id}
           drivers={drivers}
           currentValues={{
-            carrier: (order as any).carrier ?? null,
-            carrierCompanyName: (order as any).carrierCompanyName ?? null,
-            trackingNumber: (order as any).trackingNumber ?? null,
-            driverId: (order as any).driverId ?? null,
+            carrier: order.carrier ?? null,
+            carrierCompanyName: order.carrierCompanyName ?? null,
+            trackingNumber: order.trackingNumber ?? null,
+            driverId: order.driverId ?? null,
           }}
         />
       </div>

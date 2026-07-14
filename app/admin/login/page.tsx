@@ -4,6 +4,8 @@ import { Suspense, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 // ── Inner form — uses useSearchParams so needs Suspense ───────
 function LoginForm() {
   const router = useRouter();

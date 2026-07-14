@@ -11,7 +11,7 @@ import {
 import { ShoppingBag } from 'lucide-react';
 import ExportOrdersButton from '@/components/admin/ExportOrdersButton';
 
-// export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Orders' };
 
