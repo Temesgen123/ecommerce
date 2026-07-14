@@ -80,16 +80,18 @@ export async function updateCartItem(variantId: string, quantity: number) {
       where: { cartId: cart.id, variantId },
     });
   } else {
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+      select: { productId: true },
+    });
+    if (!variant) return { success: false };
+
     await prisma.cartItem.upsert({
       where: { cartId_variantId: { cartId: cart.id, variantId } },
       update: { quantity },
       create: {
         cartId: cart.id,
-        // productId is required — look it up from the variant
-        productId: (await prisma.productVariant.findUnique({
-          where: { id: variantId },
-          select: { productId: true },
-        }))!.productId,
+        productId: variant.productId,
         variantId,
         quantity,
       },

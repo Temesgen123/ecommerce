@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Check, Trash2, Star, MessageSquare } from 'lucide-react';
 import { approveReview, deleteReview } from '@/app/actions/reviews';
 
@@ -46,7 +46,12 @@ export default function AdminReviewsClient({
   const pending = reviews.filter((r) => !r.approved);
   const approved = reviews.filter((r) => r.approved);
 
+  const [localReviews, setLocalReviews] = useState(reviews);
+
   function handleApprove(id: string) {
+    setLocalReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, approved: true } : r)),
+    );
     startTransition(async () => {
       await approveReview(id);
     });
@@ -54,6 +59,7 @@ export default function AdminReviewsClient({
 
   function handleDelete(id: string, name: string) {
     if (!confirm(`Delete review by "${name}"?`)) return;
+    setLocalReviews((prev) => prev.filter((r) => r.id !== id));
     startTransition(async () => {
       await deleteReview(id);
     });

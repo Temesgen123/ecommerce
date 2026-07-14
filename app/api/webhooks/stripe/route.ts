@@ -246,6 +246,25 @@ export async function POST(req: NextRequest) {
       );
       await sendLowStockAlert(alertProducts);
     }
+    // Send order confirmation email
+    await sendOrderConfirmationEmail({
+      orderId: order.id,
+      customerEmail: order.customerEmail,
+      customerName: order.customerName,
+      items: order.items.map((item: any) => ({
+        productName: item.variantLabel
+          ? `${item.productName} — ${item.variantLabel}`
+          : item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.total,
+      })),
+      subtotal: order.subtotal,
+      shippingCost: order.shippingCost,
+      tax: order.tax,
+      total: order.total,
+      shippingAddress: shippingAddress,
+    });
   } catch (err) {
     console.error('❌ Failed to create order:', err);
     return NextResponse.json(
@@ -253,26 +272,5 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-
-  // Send order confirmation email
-  await sendOrderConfirmationEmail({
-    orderId: order.id,
-    customerEmail: order.customerEmail,
-    customerName: order.customerName,
-    items: order.items.map((item: any) => ({
-      productName: item.variantLabel
-        ? `${item.productName} — ${item.variantLabel}`
-        : item.productName,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      total: item.total,
-    })),
-    subtotal: order.subtotal,
-    shippingCost: order.shippingCost,
-    tax: order.tax,
-    total: order.total,
-    shippingAddress: shippingAddress,
-  });
-
   return NextResponse.json({ received: true });
 }

@@ -98,7 +98,8 @@ export async function createCheckoutSession({
   }
 
   // Combine coupons if both apply
-  const discounts: any[] = [];
+
+  const discounts: { coupon: string }[] = [];
   if (stripeCouponId) discounts.push({ coupon: stripeCouponId });
   if (stripeGiftCouponId) discounts.push({ coupon: stripeGiftCouponId });
 

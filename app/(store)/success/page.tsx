@@ -104,7 +104,9 @@ export default async function SuccessPage({ searchParams }: Props) {
               className="flex items-center justify-between text-sm"
             >
               <span style={{ color: 'var(--text-secondary)' }}>
-                {item.productName} × {item.quantity}
+                {item.productName}
+                {item.variantLabel ? ` — ${item.variantLabel}` : ''} ×{' '}
+                {item.quantity}
               </span>
               <span
                 className="font-medium"

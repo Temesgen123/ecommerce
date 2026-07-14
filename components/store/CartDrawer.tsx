@@ -239,7 +239,7 @@ export default function CartDrawer() {
             </Link>
             <button
               onClick={closeCart}
-              className="btn-primary w-full py-3 text-sm   disabled:opacity-60  block  rounded-xl text-center transition-opacity hover:opacity-90 opacity-50"
+              className="btn-secondary w-full py-3 text-sm   disabled:opacity-60  block  rounded-xl text-center transition-opacity hover:opacity-90"
               style={{ color: 'var(--text-primary)' }}
             >
               Continue Shopping

@@ -103,6 +103,11 @@ export async function submitReview(
     verifiedPurchase = !!purchase;
   }
 
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { slug: true },
+  });
+
   await prisma.productReview.create({
     data: {
       productId,
@@ -113,6 +118,7 @@ export async function submitReview(
   });
 
   revalidatePath('/products');
+  if (product) revalidatePath(`/products/${product.slug}`);
   return {
     success: true,
     message: verifiedPurchase

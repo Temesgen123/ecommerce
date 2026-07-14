@@ -50,6 +50,7 @@ interface ProductDetailProps {
     variants: Variant[];
     reviews: Review[];
     _count: { reviews: number };
+    stock: number;
   };
   isWishlisted: boolean;
   customerEmail?: string | null;
@@ -543,7 +544,7 @@ export default function ProductDetail({
           {/* Add to Cart */}
           <button
             onClick={handleAddToCart}
-            disabled={!inStock && hasOptions}
+            disabled={hasOptions ? !inStock : product.stock === 0}
             className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-base font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               background: addedToCart ? '#16a34a' : 'var(--accent)',
@@ -557,7 +558,13 @@ export default function ProductDetail({
             ) : (
               <>
                 <ShoppingBag className="h-5 w-5" />
-                {!inStock && hasOptions ? 'Out of Stock' : 'Add to Cart'}
+                {hasOptions
+                  ? !inStock
+                    ? 'Out of Stock'
+                    : 'Add to Cart'
+                  : product.stock === 0
+                    ? 'Out of Stock'
+                    : 'Add to Cart'}
               </>
             )}
           </button>
