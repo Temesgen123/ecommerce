@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import LoginForm from '@/components/store/LoginForm';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sign In' };
+
 export default async function CustomerLoginPage() {
   const customer = await getCustomer();
   if (customer) redirect('/account');
