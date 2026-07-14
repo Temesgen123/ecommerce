@@ -1,5 +1,5 @@
 // ============================================================
-// middleware.ts   (project root)
+// proxy.ts   (project root )
 // ============================================================
 // Runs on every request that matches `config.matcher`.
 // Redirects unauthenticated visitors away from /admin and
@@ -15,7 +15,7 @@ import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
 export default withAuth(
-  function middleware(request) {
+  function proxy(request) {
     const { pathname } = request.nextUrl;
     const token = request.nextauth.token;
     const role = token?.role as string | undefined;
@@ -37,7 +37,7 @@ export default withAuth(
   },
   {
     pages: {
-      signIn: '/admin/login', // fallback used when withAuth itself can't determine which login page applies
+      signIn: '/admin/login',
     },
   },
 );
