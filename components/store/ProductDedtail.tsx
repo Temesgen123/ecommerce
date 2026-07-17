@@ -264,7 +264,7 @@ export default function ProductDetail({
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 100vw, 55vw"
-                    className="object-contain"
+                    className="object-cover"
                     priority
                   />
                 ) : (
@@ -318,7 +318,7 @@ export default function ProductDetail({
                         alt=""
                         fill
                         sizes="64px"
-                        className="object-contain"
+                        className="object-cover"
                       />
                     </button>
                   ))}
