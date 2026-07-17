@@ -236,7 +236,6 @@ export default function ProductDetail({
                     onClick={() => {
                       setCurrentImage(i);
                       setVariantMainImage(null); // switch back to gallery
-                      setHoveredImage(img);
                     }}
                     onMouseEnter={() => setHoveredImage(img)}
                     onMouseLeave={() => setHoveredImage(null)}
@@ -316,14 +315,18 @@ export default function ProductDetail({
                   {product.images.map((img, i) => (
                     <button
                       key={i}
-                      onClick={() => setCurrentImage(i)}
+                      onClick={() => {
+                        setCurrentImage(i);
+                        setVariantMainImage(null); // override any active variant image
+                      }}
                       className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg transition-all"
                       style={{
                         border:
-                          i === currentImage
+                          i === currentImage && !variantMainImage
                             ? '2px solid var(--accent)'
                             : '2px solid transparent',
-                        opacity: i === currentImage ? 1 : 0.6,
+                        opacity:
+                          i === currentImage && !variantMainImage ? 1 : 0.6,
                       }}
                     >
                       <Image
