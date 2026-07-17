@@ -236,6 +236,7 @@ export default function ProductDetail({
                     onClick={() => {
                       setCurrentImage(i);
                       setVariantMainImage(null); // switch back to gallery
+                      setHoveredImage(img);
                     }}
                     onMouseEnter={() => setHoveredImage(img)}
                     onMouseLeave={() => setHoveredImage(null)}
