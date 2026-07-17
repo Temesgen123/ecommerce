@@ -1,6 +1,12 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import Image from 'next/image';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
 import {
@@ -8,6 +14,7 @@ import {
   updateVariant,
   type VariantFormState,
 } from '@/app/actions/variants';
+import { uploadProductImage } from '@/app/actions/upload';
 
 interface VariantFormProps {
   productId: string;
@@ -51,7 +58,7 @@ export default function VariantForm({
   const [variantImage, setVariantImage] = useState<string>(
     defaultValues.image ?? '',
   );
-  const [uploading, setUploading] = useState(false);
+  const [uploading, startUpload] = useTransition();
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,7 +68,7 @@ export default function VariantForm({
 
   const err = state.errors ?? {};
 
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -69,36 +76,26 @@ export default function VariantForm({
       setUploadError('Please select an image file.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('Image must be under 5MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('Image must be under 10MB.');
       return;
     }
 
     setUploadError(null);
-    setUploading(true);
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append(
-        'upload_preset',
-        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!,
-      );
+    const formData = new FormData();
+    formData.append('file', file);
 
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData },
-      );
-
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
-      setVariantImage(data.secure_url);
-    } catch {
-      setUploadError('Failed to upload image. Try again.');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    startUpload(async () => {
+      try {
+        const url = await uploadProductImage(formData);
+        setVariantImage(url);
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'Upload failed.');
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    });
   }
 
   return (
