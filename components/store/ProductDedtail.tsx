@@ -16,7 +16,7 @@ interface Variant {
   price: number | null;
   stock: number;
   sku: string | null;
-  image: string | null; // new
+  image: string | null;
 }
 
 interface Review {
@@ -73,8 +73,8 @@ export default function ProductDetail({
   isVerifiedBuyer = false,
 }: ProductDetailProps) {
   const [currentImage, setCurrentImage] = useState(0);
-  // Holds a variant-specific image URL when a color with its own image is selected.
-  // null means fall back to the product image gallery.
+  // hoveredImage: temporarily shown while hovering a thumbnail; null = use currentImage
+  const [hoveredImage, setHoveredImage] = useState<string | null>(null);
   const [variantMainImage, setVariantMainImage] = useState<string | null>(
     () => {
       const firstVariant =
@@ -145,6 +145,10 @@ export default function ProductDetail({
 
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
+  // The image shown in the main viewer — priority: hover > variant > gallery
+  const displayedImage =
+    hoveredImage ?? variantMainImage ?? product.images[currentImage];
+
   function selectColor(color: string) {
     setVariantError(null);
     const match = product.variants.find(
@@ -154,7 +158,6 @@ export default function ProductDetail({
     const fallback = product.variants.find((v) => v.color === color);
     const chosen = match ?? fallback ?? null;
     setSelectedVariantId(chosen?.id ?? null);
-    // Sync main image to the variant-specific image (if any)
     setVariantMainImage(chosen?.image ?? null);
   }
 
@@ -230,14 +233,23 @@ export default function ProductDetail({
                 {product.images.map((img, i) => (
                   <button
                     key={i}
-                    onClick={() => setCurrentImage(i)}
+                    onClick={() => {
+                      setCurrentImage(i);
+                      setVariantMainImage(null); // switch back to gallery
+                    }}
+                    onMouseEnter={() => setHoveredImage(img)}
+                    onMouseLeave={() => setHoveredImage(null)}
                     className="relative h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-lg transition-all"
                     style={{
                       border:
-                        i === currentImage
+                        i === currentImage && !variantMainImage
                           ? '2px solid var(--accent)'
                           : '2px solid var(--border-subtle)',
-                      opacity: i === currentImage ? 1 : 0.65,
+                      opacity:
+                        hoveredImage === img ||
+                        (i === currentImage && !variantMainImage)
+                          ? 1
+                          : 0.65,
                     }}
                   >
                     <Image
@@ -260,11 +272,11 @@ export default function ProductDetail({
               >
                 {product.images.length > 0 ? (
                   <Image
-                    src={variantMainImage ?? product.images[currentImage]}
+                    src={displayedImage ?? product.images[0]}
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 100vw, 55vw"
-                    className="object-cover"
+                    className="object-cover transition-opacity duration-150"
                     priority
                   />
                 ) : (
