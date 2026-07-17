@@ -318,7 +318,7 @@ export default function ProductDetail({
                         alt=""
                         fill
                         sizes="64px"
-                        className="object-cover"
+                        className="object-contain"
                       />
                     </button>
                   ))}
