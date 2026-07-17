@@ -39,6 +39,15 @@ export default async function ProductDetailPage({ params }: Props) {
     include: {
       category: { select: { name: true, slug: true } },
       variants: {
+        select: {
+          id: true,
+          color: true,
+          size: true,
+          price: true,
+          stock: true,
+          sku: true,
+          image: true, // add this
+        },
         orderBy: [{ color: 'asc' }, { size: 'asc' }],
       },
       reviews: {

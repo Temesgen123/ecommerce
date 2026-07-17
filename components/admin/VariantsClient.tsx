@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Image from 'next/image';
 import { Pencil, Trash2, X, Tag } from 'lucide-react';
 import VariantForm from './VariantForm';
 import { deleteVariant } from '@/app/actions/variants';
@@ -12,12 +13,13 @@ interface Variant {
   sku: string | null;
   price: number | null;
   stock: number;
+  image: string | null;
 }
 
 interface VariantsClientProps {
   productId: string;
   variants: Variant[];
-  basePrice: number; // for showing the effective price when variant.price is null
+  basePrice: number;
 }
 
 function formatPrice(cents: number) {
@@ -68,7 +70,8 @@ export default function VariantsClient({
           </h2>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
             Each variant tracks its own stock. Leave price blank to use the base
-            price ({formatPrice(basePrice)}).
+            price ({formatPrice(basePrice)}). Upload an image per color to show
+            in the product page color picker.
           </p>
         </div>
         <button
@@ -116,6 +119,7 @@ export default function VariantsClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs text-gray-500">
+                <th className="px-4 py-2.5 font-medium w-10">Img</th>
                 <th className="px-4 py-2.5 font-medium">Variant</th>
                 <th className="px-4 py-2.5 font-medium">SKU</th>
                 <th className="px-4 py-2.5 font-medium">Price</th>
@@ -129,6 +133,23 @@ export default function VariantsClient({
                 return (
                   <>
                     <tr key={variant.id} className="hover:bg-gray-50">
+                      {/* Variant image thumbnail */}
+                      <td className="px-4 py-2.5">
+                        {variant.image ? (
+                          <div className="relative h-8 w-8 overflow-hidden rounded-md border border-gray-200 flex-shrink-0">
+                            <Image
+                              src={variant.image}
+                              alt={label}
+                              fill
+                              sizes="32px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-8 w-8 rounded-md border border-dashed border-gray-200 bg-gray-50 flex-shrink-0" />
+                        )}
+                      </td>
+
                       <td className="px-4 py-2.5 font-medium text-gray-900">
                         <span className="inline-flex items-center gap-1.5">
                           <Tag className="h-3 w-3 text-gray-400" />
@@ -191,7 +212,7 @@ export default function VariantsClient({
 
                     {editingId === variant.id && (
                       <tr key={`${variant.id}-edit`} className="bg-gray-50">
-                        <td colSpan={5} className="px-4 py-3">
+                        <td colSpan={6} className="px-4 py-3">
                           <VariantForm
                             productId={productId}
                             mode="edit"
@@ -202,6 +223,7 @@ export default function VariantsClient({
                               sku: variant.sku ?? '',
                               price: variant.price,
                               stock: variant.stock,
+                              image: variant.image,
                             }}
                             onSuccess={() => setEditingId(null)}
                             onCancel={() => setEditingId(null)}

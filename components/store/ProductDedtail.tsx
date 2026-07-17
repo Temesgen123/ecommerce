@@ -4,15 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRecentlyViewedStore } from '@/lib/recently-viewed-store';
-import {
-  ShoppingBag,
-  Heart,
-  Star,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-} from 'lucide-react';
+import { ShoppingBag, Heart, Star, Check, Copy } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import { toggleWishlistItem } from '@/app/actions/wishlist';
 import ReviewForm from '@/components/store/ReviewForm';
@@ -24,6 +16,7 @@ interface Variant {
   price: number | null;
   stock: number;
   sku: string | null;
+  image: string | null; // new
 }
 
 interface Review {
@@ -80,6 +73,15 @@ export default function ProductDetail({
   isVerifiedBuyer = false,
 }: ProductDetailProps) {
   const [currentImage, setCurrentImage] = useState(0);
+  // Holds a variant-specific image URL when a color with its own image is selected.
+  // null means fall back to the product image gallery.
+  const [variantMainImage, setVariantMainImage] = useState<string | null>(
+    () => {
+      const firstVariant =
+        product.variants.find((v) => v.stock > 0) ?? product.variants[0];
+      return firstVariant?.image ?? null;
+    },
+  );
   const [wishlisted, setWishlisted] = useState(isWishlisted);
   const [wishlistPending, setWishlistPending] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
@@ -93,7 +95,6 @@ export default function ProductDetail({
 
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
-
   const addRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
 
   useEffect(() => {
@@ -151,7 +152,10 @@ export default function ProductDetail({
         v.color === color && (selectedSize ? v.size === selectedSize : true),
     );
     const fallback = product.variants.find((v) => v.color === color);
-    setSelectedVariantId((match ?? fallback)?.id ?? null);
+    const chosen = match ?? fallback ?? null;
+    setSelectedVariantId(chosen?.id ?? null);
+    // Sync main image to the variant-specific image (if any)
+    setVariantMainImage(chosen?.image ?? null);
   }
 
   function selectSize(size: string) {
@@ -196,11 +200,11 @@ export default function ProductDetail({
   async function handleWishlist() {
     if (wishlistPending) return;
     setWishlistPending(true);
-    setWishlisted((prev) => !prev); // optimistic update
+    setWishlisted((prev) => !prev);
     try {
       await toggleWishlistItem(product.id);
     } catch {
-      setWishlisted((prev) => !prev); // revert on error
+      setWishlisted((prev) => !prev);
     } finally {
       setWishlistPending(false);
     }
@@ -214,108 +218,273 @@ export default function ProductDetail({
       className="mx-auto max-w-6xl px-4 py-10 sm:px-6"
       style={{ color: 'var(--text-primary)' }}
     >
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        {/* ── Image gallery ───────────────────────────────── */}
-        <div className="relative">
-          <div
-            className="relative aspect-square w-full overflow-hidden rounded-2xl"
-            style={{ background: 'var(--bg-elevated)' }}
-          >
-            {product.images.length > 0 ? (
-              <Image
-                src={product.images[currentImage]}
-                alt={product.name}
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div
-                className="flex h-full items-center justify-center"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                No image
-              </div>
-            )}
-
-            {/* Prev/Next arrows */}
+      {/* ── Main product grid ─────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_530px]">
+        {/* ── Left: image gallery + variant selectors ───────── */}
+        <div className="flex flex-col gap-6">
+          {/* Image section: vertical thumbnails + main image */}
+          <div className="flex gap-3">
+            {/* Vertical thumbnail strip (desktop only) */}
             {product.images.length > 1 && (
-              <>
-                <button
-                  onClick={() =>
-                    setCurrentImage(
-                      (currentImage - 1 + product.images.length) %
-                        product.images.length,
-                    )
-                  }
-                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.9)' }}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentImage((currentImage + 1) % product.images.length)
-                  }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.9)' }}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-
-                {/* Image counter */}
-                <div
-                  className="absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-xs font-semibold"
-                  style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}
-                >
-                  {currentImage + 1} / {product.images.length}
-                </div>
-              </>
-            )}
-
-            {/* Sale badge */}
-            {discount && (
-              <div
-                className="absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-bold"
-                style={{ background: 'var(--accent)', color: '#fff' }}
-              >
-                SALE
+              <div className="hidden lg:flex flex-col gap-2 flex-shrink-0">
+                {product.images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentImage(i)}
+                    className="relative h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-lg transition-all"
+                    style={{
+                      border:
+                        i === currentImage
+                          ? '2px solid var(--accent)'
+                          : '2px solid var(--border-subtle)',
+                      opacity: i === currentImage ? 1 : 0.65,
+                    }}
+                  >
+                    <Image
+                      src={img}
+                      alt={`${product.name} view ${i + 1}`}
+                      fill
+                      sizes="50px"
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
               </div>
             )}
+
+            {/* Main image */}
+            <div className="relative flex-1">
+              <div
+                className="relative aspect-square w-full overflow-hidden rounded-2xl"
+                style={{ background: 'var(--bg-elevated)' }}
+              >
+                {product.images.length > 0 ? (
+                  <Image
+                    src={variantMainImage ?? product.images[currentImage]}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 55vw"
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div
+                    className="flex h-full items-center justify-center"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    No image
+                  </div>
+                )}
+
+                {/* Sale badge */}
+                {discount && (
+                  <div
+                    className="absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-bold"
+                    style={{ background: 'var(--accent)', color: '#fff' }}
+                  >
+                    -{discount}% OFF
+                  </div>
+                )}
+
+                {/* Image counter (mobile) */}
+                {product.images.length > 1 && (
+                  <div
+                    className="absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-xs font-semibold lg:hidden"
+                    style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}
+                  >
+                    {currentImage + 1} / {product.images.length}
+                  </div>
+                )}
+              </div>
+
+              {/* Horizontal thumbnail strip (mobile only) */}
+              {product.images.length > 1 && (
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
+                  {product.images.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentImage(i)}
+                      className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg transition-all"
+                      style={{
+                        border:
+                          i === currentImage
+                            ? '2px solid var(--accent)'
+                            : '2px solid transparent',
+                        opacity: i === currentImage ? 1 : 0.6,
+                      }}
+                    >
+                      <Image
+                        src={img}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Thumbnail strip */}
-          {product.images.length > 1 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {product.images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentImage(i)}
-                  className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg transition-all"
-                  style={{
-                    border:
-                      i === currentImage
-                        ? '2px solid var(--accent)'
-                        : '2px solid transparent',
-                    opacity: i === currentImage ? 1 : 0.6,
-                  }}
-                >
-                  <Image
-                    src={img}
-                    alt=""
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </button>
-              ))}
+          {/* ── Variant selectors (below image on desktop) ── */}
+          {hasOptions && (
+            <div
+              className="space-y-5 rounded-xl border p-4"
+              style={{
+                borderColor: 'var(--border-subtle)',
+                background: 'var(--bg-surface)',
+              }}
+            >
+              {/* Color image card grid */}
+              {colors.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold">
+                    Color:{' '}
+                    {selectedColor && (
+                      <span className="font-bold">{selectedColor}</span>
+                    )}
+                  </p>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
+                    {colors.map((color) => {
+                      const isSelected = selectedColor === color;
+                      const variantForColor = product.variants.find(
+                        (v) => v.color === color,
+                      );
+                      const hasStock = product.variants.some(
+                        (v) => v.color === color && v.stock > 0,
+                      );
+                      const colorPrice =
+                        variantForColor?.price ?? product.price;
+                      const colorCompare = product.compareAt;
+
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => selectColor(color)}
+                          disabled={!hasStock}
+                          className="rounded-lg border p-1.5 text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                          style={{
+                            borderColor: isSelected
+                              ? 'var(--accent)'
+                              : 'var(--border-base)',
+                            boxShadow: isSelected
+                              ? '0 0 0 1.5px var(--accent)'
+                              : 'none',
+                            background: isSelected
+                              ? 'rgba(249,115,22,0.04)'
+                              : 'var(--bg-surface)',
+                          }}
+                        >
+                          {/* Variant image */}
+                          <div
+                            className="relative aspect-square w-full overflow-hidden rounded"
+                            style={{ background: 'var(--bg-elevated)' }}
+                          >
+                            {(variantForColor?.image ?? product.images[0]) ? (
+                              <Image
+                                src={
+                                  variantForColor?.image ?? product.images[0]!
+                                }
+                                alt={color}
+                                fill
+                                sizes="80px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full" />
+                            )}
+                            {/* Out of stock overlay */}
+                            {!hasStock && (
+                              <div
+                                className="absolute inset-0 flex items-center justify-center text-[10px] font-bold"
+                                style={{
+                                  background: 'rgba(0,0,0,0.45)',
+                                  color: '#fff',
+                                }}
+                              >
+                                Sold out
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Price */}
+                          <p
+                            className="mt-1 text-[11px] font-bold leading-tight"
+                            style={{ color: 'var(--accent)' }}
+                          >
+                            {formatPrice(colorPrice)}
+                          </p>
+                          {colorCompare && colorCompare > colorPrice && (
+                            <p
+                              className="text-[10px] line-through leading-tight"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
+                              {formatPrice(colorCompare)}
+                            </p>
+                          )}
+
+                          {/* Color name */}
+                          <p
+                            className="mt-0.5 truncate text-[10px] leading-tight"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            {color}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Size dropdown */}
+              {sizes.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">
+                      Size:{' '}
+                      {selectedSize && (
+                        <span className="font-bold">{selectedSize}</span>
+                      )}
+                    </p>
+                  </div>
+                  <select
+                    value={selectedSize ?? ''}
+                    onChange={(e) => selectSize(e.target.value)}
+                    className="w-full max-w-24 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors"
+                    style={{
+                      borderColor: 'var(--border-base)',
+                      background: 'var(--bg-surface)',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <option value="" disabled>
+                      Select a size
+                    </option>
+                    {sizes.map((size) => {
+                      const hasStock = product.variants.some(
+                        (v) =>
+                          v.size === size &&
+                          (selectedColor ? v.color === selectedColor : true) &&
+                          v.stock > 0,
+                      );
+                      return (
+                        <option key={size} value={size} disabled={!hasStock}>
+                          {size}
+                          {!hasStock ? ' — Out of Stock' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* ── Product info ────────────────────────────────── */}
-        <div className="flex flex-col gap-4">
+        {/* ── Right: sticky buy box ─────────────────────────── */}
+        <div className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
           {/* Category */}
           {product.category && (
             <Link
@@ -328,7 +497,7 @@ export default function ProductDetail({
           )}
 
           {/* Name */}
-          <h1 className="text-3xl font-bold leading-tight">{product.name}</h1>
+          <h1 className="text-2xl font-bold leading-tight">{product.name}</h1>
 
           {/* Brand */}
           {product.brand && (
@@ -365,33 +534,37 @@ export default function ProductDetail({
             </div>
           )}
 
-          {/* Price */}
-          <div className="flex items-baseline gap-3">
-            <span
-              className="text-3xl font-bold"
-              style={{ color: 'var(--accent)' }}
-            >
-              {formatPrice(effectivePrice)}
-            </span>
-            {product.compareAt && product.compareAt > effectivePrice && (
-              <>
+          {/* Price block */}
+          <div
+            className="rounded-xl border p-4 space-y-1"
+            style={{
+              borderColor: 'var(--border-subtle)',
+              background: 'var(--bg-surface)',
+            }}
+          >
+            <div className="flex items-baseline gap-3">
+              {discount && (
                 <span
-                  className="text-lg line-through"
-                  style={{ color: 'var(--text-muted)' }}
+                  className="text-sm font-bold"
+                  style={{ color: '#dc2626' }}
                 >
+                  -{discount}%
+                </span>
+              )}
+              <span
+                className="text-3xl font-bold"
+                style={{ color: 'var(--accent)' }}
+              >
+                {formatPrice(effectivePrice)}
+              </span>
+            </div>
+            {product.compareAt && product.compareAt > effectivePrice && (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                List price:{' '}
+                <span className="line-through">
                   {formatPrice(product.compareAt)}
                 </span>
-                <span
-                  className="rounded-full px-2.5 py-0.5 text-xs font-bold"
-                  style={{
-                    background: 'var(--bg-elevated)',
-                    color: 'var(--text-muted)',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  SALE
-                </span>
-              </>
+              </p>
             )}
           </div>
 
@@ -422,116 +595,6 @@ export default function ProductDetail({
               : `✓ In stock (${totalStock} available)`}
           </p>
 
-          {/* ── Variant picker ────────────────────────────── */}
-          {hasOptions && (
-            <div
-              className="space-y-4 rounded-xl border p-4"
-              style={{
-                borderColor: 'var(--border-subtle)',
-                background: 'var(--bg-surface)',
-              }}
-            >
-              {colors.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">
-                    Color
-                    {selectedColor && (
-                      <span
-                        className="ml-2 font-normal"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        — {selectedColor}
-                      </span>
-                    )}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {colors.map((color) => {
-                      const isSelected = selectedColor === color;
-                      const hasStock = product.variants.some(
-                        (v) => v.color === color && v.stock > 0,
-                      );
-                      return (
-                        <button
-                          key={color}
-                          onClick={() => selectColor(color)}
-                          disabled={!hasStock}
-                          className="rounded-lg border px-4 py-0 text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
-                          style={{
-                            borderColor: isSelected
-                              ? 'var(--accent)'
-                              : 'var(--border-base)',
-                            background: isSelected
-                              ? 'rgba(249,115,22,0.08)'
-                              : 'white',
-                            color: isSelected
-                              ? 'var(--accent)'
-                              : 'var(--text-secondary)',
-                            boxShadow: isSelected
-                              ? '0 0 0 1.5px var(--accent)'
-                              : 'none',
-                          }}
-                        >
-                          {color}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {sizes.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">
-                    Size
-                    {selectedSize && (
-                      <span
-                        className="ml-2 font-normal"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        — {selectedSize}
-                      </span>
-                    )}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {sizes.map((size) => {
-                      const isSelected = selectedSize === size;
-                      const hasStock = product.variants.some(
-                        (v) =>
-                          v.size === size &&
-                          (selectedColor ? v.color === selectedColor : true) &&
-                          v.stock > 0,
-                      );
-                      return (
-                        <button
-                          key={size}
-                          onClick={() => selectSize(size)}
-                          disabled={!hasStock}
-                          className="min-w-[44px] rounded-lg border px-3 py-0 text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
-                          style={{
-                            borderColor: isSelected
-                              ? 'var(--accent)'
-                              : 'var(--border-base)',
-                            background: isSelected
-                              ? 'rgba(249,115,22,0.08)'
-                              : 'white',
-                            color: isSelected
-                              ? 'var(--accent)'
-                              : 'var(--text-secondary)',
-                            boxShadow: isSelected
-                              ? '0 0 0 1.5px var(--accent)'
-                              : 'none',
-                          }}
-                        >
-                          {size}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {variantError && (
             <p
               className="text-sm font-medium"
@@ -541,11 +604,11 @@ export default function ProductDetail({
             </p>
           )}
 
-          {/* Add to Cart */}
+          {/* Add to Cart button */}
           <button
             onClick={handleAddToCart}
             disabled={hasOptions ? !inStock : product.stock === 0}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-base font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-base font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               background: addedToCart ? '#16a34a' : 'var(--accent)',
               color: '#fff',
@@ -569,6 +632,21 @@ export default function ProductDetail({
             )}
           </button>
 
+          {/* Wishlist */}
+          <button
+            onClick={handleWishlist}
+            disabled={wishlistPending}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-colors disabled:opacity-50"
+            style={{
+              borderColor: wishlisted ? '#ef4444' : 'var(--border-base)',
+              color: wishlisted ? '#ef4444' : 'var(--text-secondary)',
+              background: wishlisted ? 'rgba(239,68,68,0.05)' : 'transparent',
+            }}
+          >
+            <Heart className="h-4 w-4" fill={wishlisted ? '#ef4444' : 'none'} />
+            {wishlisted ? 'Saved to Wishlist' : 'Save to Wishlist'}
+          </button>
+
           {/* SKU */}
           {selectedVariant?.sku && (
             <p
@@ -579,6 +657,12 @@ export default function ProductDetail({
             </p>
           )}
 
+          {/* Divider */}
+          <div
+            className="border-t"
+            style={{ borderColor: 'var(--border-subtle)' }}
+          />
+
           {/* Share */}
           <div className="space-y-2">
             <p
@@ -587,12 +671,12 @@ export default function ProductDetail({
             >
               Share
             </p>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-100"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -608,7 +692,7 @@ export default function ProductDetail({
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-100"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -618,13 +702,13 @@ export default function ProductDetail({
                 >
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
-                X (Twitter)
+                X
               </a>
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-100"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -641,7 +725,7 @@ export default function ProductDetail({
                 href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent(shareText)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-100"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 <svg
@@ -655,7 +739,7 @@ export default function ProductDetail({
               </a>
               <button
                 onClick={handleCopyLink}
-                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:bg-gray-100"
                 style={{ borderColor: 'var(--border-base)' }}
               >
                 {copied ? (
@@ -670,19 +754,6 @@ export default function ProductDetail({
               </button>
             </div>
           </div>
-
-          {/* Wishlist */}
-          <button
-            onClick={handleWishlist}
-            disabled={wishlistPending}
-            className="flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 hover:bg-gray-300"
-            style={{
-              color: wishlisted ? '#ef4444' : 'var(--text-muted)',
-            }}
-          >
-            <Heart className="h-4 w-4" fill={wishlisted ? '#ef4444' : 'none'} />
-            {wishlisted ? 'Saved to Wishlist' : 'Save to Wishlist'}
-          </button>
         </div>
       </div>
 

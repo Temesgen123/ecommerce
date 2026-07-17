@@ -16,6 +16,7 @@ const VariantSchema = z.object({
   sku: sanitizedString({ min: 0, max: 100 }).optional(),
   price: z.coerce.number().min(0).optional().nullable(),
   stock: z.coerce.number().int().min(0),
+  image: z.string().url().optional().nullable(),
 });
 
 function toCents(dollars: number | null | undefined): number | null {
@@ -34,17 +35,15 @@ export async function createVariant(
     sku: formData.get('sku') || undefined,
     price: formData.get('price') || null,
     stock: formData.get('stock'),
+    image: formData.get('image') || null,
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { color, size, sku, price, stock } = parsed.data;
+  const { color, size, sku, price, stock, image } = parsed.data;
 
-  // Require at least one of color/size — a variant with neither
-  // is the implicit "default" variant created automatically on
-  // product creation; admins shouldn't create a second one of those.
   if (!color && !size) {
     return {
       errors: {
@@ -62,6 +61,7 @@ export async function createVariant(
         sku: sku || null,
         price: toCents(price),
         stock,
+        image: image || null,
       },
     });
   } catch (e: unknown) {
@@ -97,13 +97,14 @@ export async function updateVariant(
     sku: formData.get('sku') || undefined,
     price: formData.get('price') || null,
     stock: formData.get('stock'),
+    image: formData.get('image') || null,
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { color, size, sku, price, stock } = parsed.data;
+  const { color, size, sku, price, stock, image } = parsed.data;
 
   try {
     await prisma.productVariant.update({
@@ -114,6 +115,7 @@ export async function updateVariant(
         sku: sku || null,
         price: toCents(price),
         stock,
+        image: image || null,
       },
     });
   } catch (e: unknown) {
@@ -141,8 +143,6 @@ export async function deleteVariant(
   variantId: string,
   productId: string,
 ): Promise<void> {
-  // Guard: don't allow deleting the last remaining variant — every
-  // product must always have at least one, or it becomes unpurchasable.
   const count = await prisma.productVariant.count({ where: { productId } });
   if (count <= 1) {
     throw new Error(
