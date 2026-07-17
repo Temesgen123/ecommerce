@@ -263,7 +263,7 @@ export default function ProductDetail({
                     src={variantMainImage ?? product.images[currentImage]}
                     alt={product.name}
                     fill
-                    sizes="(max-width: 768px) 100vw, 55vw"
+                    sizes="(max-width: full) 100vw, 55vw"
                     className="object-cover"
                     priority
                   />
