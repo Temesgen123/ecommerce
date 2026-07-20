@@ -197,3 +197,64 @@ export async function updateStock(
 
   revalidatePath('/admin/products');
 }
+
+// ─── Bundles ──────────────────────────────────────────────────
+
+export async function addBundleProduct(
+  productId: string,
+  bundledProductId: string,
+): Promise<{ error?: string }> {
+  if (productId === bundledProductId) {
+    return { error: 'A product cannot be bundled with itself.' };
+  }
+  try {
+    await prisma.productBundle.create({
+      data: { productId, bundledProductId },
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('Unique constraint')) {
+      return { error: 'This product is already in the bundle.' };
+    }
+    return { error: 'Failed to add bundle product.' };
+  }
+  revalidatePath(`/admin/products/${productId}/edit`);
+  return {};
+}
+
+export async function removeBundleProduct(
+  productId: string,
+  bundledProductId: string,
+): Promise<void> {
+  await prisma.productBundle.deleteMany({
+    where: { productId, bundledProductId },
+  });
+  revalidatePath(`/admin/products/${productId}/edit`);
+}
+
+export async function searchProductsForBundle(
+  productId: string,
+  query: string,
+): Promise<{ id: string; name: string; price: number; images: string[] }[]> {
+  if (!query || query.trim().length < 2) return [];
+
+  // Get IDs already in the bundle to exclude them
+  const existing = await prisma.productBundle.findMany({
+    where: { productId },
+    select: { bundledProductId: true },
+  });
+  const excludeIds = [productId, ...existing.map((b) => b.bundledProductId)];
+
+  return prisma.product.findMany({
+    where: {
+      id: { notIn: excludeIds },
+      published: true,
+      OR: [
+        { name: { contains: query, mode: 'insensitive' } },
+        { brand: { contains: query, mode: 'insensitive' } },
+      ],
+    },
+    select: { id: true, name: true, price: true, images: true },
+    take: 6,
+  });
+}
