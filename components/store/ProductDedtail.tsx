@@ -7,7 +7,7 @@ import { useRecentlyViewedStore } from '@/lib/recently-viewed-store';
 import { ShoppingBag, Heart, Star, Check, Copy } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import { toggleWishlistItem } from '@/app/actions/wishlist';
-import ReviewForm from '@/components/store/ReviewForm';
+import FrequentlyBoughtTogether from '@/components/store/FrequentlyBoughtTogether';
 
 interface Variant {
   id: string;
@@ -17,16 +17,6 @@ interface Variant {
   stock: number;
   sku: string | null;
   image: string | null;
-}
-
-interface Review {
-  id: string;
-  rating: number;
-  title: string | null;
-  body: string;
-  authorName: string;
-  createdAt: Date;
-  verifiedPurchase: boolean;
 }
 
 interface ProductDetailProps {
@@ -41,14 +31,23 @@ interface ProductDetailProps {
     images: string[];
     category: { name: string; slug: string } | null;
     variants: Variant[];
-    reviews: Review[];
-    _count: { reviews: number };
     stock: number;
+    avgRating: number | null;
+    reviewCount: number;
   };
   isWishlisted: boolean;
   customerEmail?: string | null;
   customerName?: string | null;
   isVerifiedBuyer?: boolean;
+  bundleProducts?: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    compareAt: number | null;
+    images: string[];
+    variants: { id: string; stock: number; price: number | null }[];
+  }[];
 }
 
 function formatPrice(cents: number) {
@@ -71,9 +70,9 @@ export default function ProductDetail({
   customerEmail,
   customerName,
   isVerifiedBuyer = false,
+  bundleProducts = [],
 }: ProductDetailProps) {
   const [currentImage, setCurrentImage] = useState(0);
-  // hoveredImage: temporarily shown while hovering a thumbnail; null = use currentImage
   const [hoveredImage, setHoveredImage] = useState<string | null>(null);
   const [variantMainImage, setVariantMainImage] = useState<string | null>(
     () => {
@@ -137,15 +136,7 @@ export default function ProductDetail({
         )
       : null;
 
-  const avgRating =
-    product.reviews.length > 0
-      ? product.reviews.reduce((sum, r) => sum + r.rating, 0) /
-        product.reviews.length
-      : null;
-
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-
-  // The image shown in the main viewer — priority: hover > variant > gallery
   const displayedImage =
     hoveredImage ?? variantMainImage ?? product.images[currentImage];
 
@@ -225,7 +216,6 @@ export default function ProductDetail({
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_530px]">
         {/* ── Left: image gallery + variant selectors ───────── */}
         <div className="flex flex-col gap-6">
-          {/* Image section: vertical thumbnails + main image */}
           <div className="flex gap-3">
             {/* Vertical thumbnail strip (desktop only) */}
             {product.images.length > 1 && (
@@ -235,7 +225,7 @@ export default function ProductDetail({
                     key={i}
                     onClick={() => {
                       setCurrentImage(i);
-                      setVariantMainImage(null); // switch back to gallery
+                      setVariantMainImage(null);
                     }}
                     onMouseEnter={() => setHoveredImage(img)}
                     onMouseLeave={() => setHoveredImage(null)}
@@ -287,8 +277,6 @@ export default function ProductDetail({
                     No image
                   </div>
                 )}
-
-                {/* Sale badge */}
                 {discount && (
                   <div
                     className="absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-bold"
@@ -297,8 +285,6 @@ export default function ProductDetail({
                     -{discount}% OFF
                   </div>
                 )}
-
-                {/* Image counter (mobile) */}
                 {product.images.length > 1 && (
                   <div
                     className="absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-xs font-semibold lg:hidden"
@@ -317,7 +303,7 @@ export default function ProductDetail({
                       key={i}
                       onClick={() => {
                         setCurrentImage(i);
-                        setVariantMainImage(null); // override any active variant image
+                        setVariantMainImage(null);
                       }}
                       className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg transition-all"
                       style={{
@@ -343,7 +329,7 @@ export default function ProductDetail({
             </div>
           </div>
 
-          {/* ── Variant selectors (below image on desktop) ── */}
+          {/* ── Variant selectors ── */}
           {hasOptions && (
             <div
               className="space-y-5 rounded-xl border p-4"
@@ -352,7 +338,6 @@ export default function ProductDetail({
                 background: 'var(--bg-surface)',
               }}
             >
-              {/* Color image card grid */}
               {colors.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-sm font-semibold">
@@ -392,7 +377,6 @@ export default function ProductDetail({
                               : 'var(--bg-surface)',
                           }}
                         >
-                          {/* Variant image */}
                           <div
                             className="relative aspect-square w-full overflow-hidden rounded"
                             style={{ background: 'var(--bg-elevated)' }}
@@ -410,7 +394,6 @@ export default function ProductDetail({
                             ) : (
                               <div className="h-full w-full" />
                             )}
-                            {/* Out of stock overlay */}
                             {!hasStock && (
                               <div
                                 className="absolute inset-0 flex items-center justify-center text-[10px] font-bold"
@@ -423,8 +406,6 @@ export default function ProductDetail({
                               </div>
                             )}
                           </div>
-
-                          {/* Price */}
                           <p
                             className="mt-1 text-[11px] font-bold leading-tight"
                             style={{ color: 'var(--accent)' }}
@@ -439,8 +420,6 @@ export default function ProductDetail({
                               {formatPrice(colorCompare)}
                             </p>
                           )}
-
-                          {/* Color name */}
                           <p
                             className="mt-0.5 truncate text-[10px] leading-tight"
                             style={{ color: 'var(--text-secondary)' }}
@@ -454,17 +433,14 @@ export default function ProductDetail({
                 </div>
               )}
 
-              {/* Size dropdown */}
               {sizes.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">
-                      Size:{' '}
-                      {selectedSize && (
-                        <span className="font-bold">{selectedSize}</span>
-                      )}
-                    </p>
-                  </div>
+                  <p className="text-sm font-semibold">
+                    Size:{' '}
+                    {selectedSize && (
+                      <span className="font-bold">{selectedSize}</span>
+                    )}
+                  </p>
                   <select
                     value={selectedSize ?? ''}
                     onChange={(e) => selectSize(e.target.value)}
@@ -501,7 +477,6 @@ export default function ProductDetail({
 
         {/* ── Right: sticky buy box ─────────────────────────── */}
         <div className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
-          {/* Category */}
           {product.category && (
             <Link
               href={`/products?category=${product.category.slug}`}
@@ -512,18 +487,16 @@ export default function ProductDetail({
             </Link>
           )}
 
-          {/* Name */}
           <h1 className="text-2xl font-bold leading-tight">{product.name}</h1>
 
-          {/* Brand */}
           {product.brand && (
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               by <span className="font-medium">{product.brand}</span>
             </p>
           )}
 
-          {/* Rating */}
-          {avgRating !== null && (
+          {/* Rating summary */}
+          {product.avgRating !== null && (
             <div className="flex items-center gap-2">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -532,11 +505,11 @@ export default function ProductDetail({
                     className="h-4 w-4"
                     style={{
                       fill:
-                        star <= Math.round(avgRating)
+                        star <= Math.round(product.avgRating!)
                           ? '#f59e0b'
                           : 'transparent',
                       color:
-                        star <= Math.round(avgRating)
+                        star <= Math.round(product.avgRating!)
                           ? '#f59e0b'
                           : 'var(--border-base)',
                     }}
@@ -544,8 +517,8 @@ export default function ProductDetail({
                 ))}
               </div>
               <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                {avgRating.toFixed(1)} ({product._count.reviews} review
-                {product._count.reviews !== 1 ? 's' : ''})
+                {product.avgRating.toFixed(1)} ({product.reviewCount} review
+                {product.reviewCount !== 1 ? 's' : ''})
               </span>
             </div>
           )}
@@ -620,7 +593,7 @@ export default function ProductDetail({
             </p>
           )}
 
-          {/* Add to Cart button */}
+          {/* Add to Cart */}
           <button
             onClick={handleAddToCart}
             disabled={hasOptions ? !inStock : product.stock === 0}
@@ -673,7 +646,6 @@ export default function ProductDetail({
             </p>
           )}
 
-          {/* Divider */}
           <div
             className="border-t"
             style={{ borderColor: 'var(--border-subtle)' }}
@@ -773,85 +745,17 @@ export default function ProductDetail({
         </div>
       </div>
 
-      {/* ── Reviews ─────────────────────────────────────── */}
-      <div className="mt-16 space-y-10">
-        {product.reviews.length > 0 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold">
-              Customer Reviews ({product._count.reviews})
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {product.reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="rounded-xl border p-5 space-y-2"
-                  style={{
-                    background: 'var(--bg-surface)',
-                    borderColor: 'var(--border-subtle)',
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className="h-3.5 w-3.5"
-                          style={{
-                            fill:
-                              star <= review.rating ? '#f59e0b' : 'transparent',
-                            color:
-                              star <= review.rating
-                                ? '#f59e0b'
-                                : 'var(--border-base)',
-                          }}
-                        />
-                      ))}
-                    </div>
-                    {review.verifiedPurchase && (
-                      <span
-                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                        style={{ background: '#dcfce7', color: '#16a34a' }}
-                      >
-                        ✓ Verified
-                      </span>
-                    )}
-                  </div>
-                  {review.title && (
-                    <p className="text-sm font-semibold">{review.title}</p>
-                  )}
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    {review.body}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {review.authorName} ·{' '}
-                    {new Date(review.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Write a review */}
-        <div
-          className="rounded-2xl border p-6 space-y-4"
-          style={{
-            borderColor: 'var(--border-subtle)',
-            background: 'var(--bg-surface)',
-          }}
-        >
-          <h2 className="text-xl font-bold">Write a Review</h2>
-          <ReviewForm
-            productId={product.id}
-            customerEmail={customerEmail}
-            customerName={customerName}
-            isVerifiedBuyer={isVerifiedBuyer}
-          />
-        </div>
-      </div>
+      <FrequentlyBoughtTogether
+        mainProduct={{
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          images: product.images,
+          variants: product.variants,
+        }}
+        bundleProducts={bundleProducts}
+      />
     </div>
   );
 }

@@ -97,6 +97,8 @@ model Product {
   updatedAt   DateTime    @updatedAt
   wishlists Wishlist[]
   cartItems   CartItem[]
+  bundledIn  ProductBundle[] @relation("BundleParent")
+  bundleItems ProductBundle[] @relation("BundleChild")
   
   @@index([slug])
   @@index([categoryId])
@@ -405,4 +407,17 @@ model CartItem {
   @@unique([cartId, variantId])
   @@index([cartId])
   @@map("cart_items")
+}
+
+model ProductBundle {
+  id               String   @id @default(cuid())
+  productId        String
+  product          Product  @relation("BundleParent", fields: [productId], references: [id], onDelete: Cascade)
+  bundledProductId String
+  bundledProduct   Product  @relation("BundleChild", fields: [bundledProductId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+
+  @@unique([productId, bundledProductId])
+  @@index([productId])
+  @@map("product_bundles")
 }

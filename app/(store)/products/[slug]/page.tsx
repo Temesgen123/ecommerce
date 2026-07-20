@@ -5,6 +5,7 @@ import ProductDetail from '@/components/store/ProductDedtail';
 import RelatedProducts from '@/components/store/RelatedProducts';
 import RecentlyViewed from '@/components/store/RecentlyViewed';
 import type { Metadata } from 'next';
+import ProductReviews from '@/components/store/ProductReviews';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export default async function ProductDetailPage({ params }: Props) {
           price: true,
           stock: true,
           sku: true,
-          image: true, // add this
+          image: true,
         },
         orderBy: [{ color: 'asc' }, { size: 'asc' }],
       },
@@ -55,10 +56,35 @@ export default async function ProductDetailPage({ params }: Props) {
         orderBy: { createdAt: 'desc' },
       },
       _count: { select: { reviews: { where: { approved: true } } } },
+      bundledIn: {
+        include: {
+          bundledProduct: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              price: true,
+              compareAt: true,
+              images: true,
+              variants: {
+                select: { id: true, stock: true, price: true },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
   if (!product) notFound();
+
+  // Compute here, in the page function where reviews are available
+  const avgRating =
+    product.reviews.length > 0
+      ? product.reviews.reduce((sum, r) => sum + r.rating, 0) /
+        product.reviews.length
+      : null;
+  const reviewCount = product._count.reviews;
 
   const isWishlisted = customer
     ? !!(await prisma.wishlist.findUnique({
@@ -71,7 +97,6 @@ export default async function ProductDetailPage({ params }: Props) {
       }))
     : false;
 
-  // Check if customer has purchased this product (for verified buyer badge)
   const isVerifiedBuyer = customer
     ? !!(await prisma.orderItem.findFirst({
         where: {
@@ -87,8 +112,24 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <>
       <ProductDetail
-        product={product as any}
+        product={
+          {
+            ...product,
+            avgRating,
+            reviewCount,
+          } as any
+        }
         isWishlisted={isWishlisted}
+        customerEmail={customer?.email ?? null}
+        customerName={customer?.name ?? null}
+        isVerifiedBuyer={isVerifiedBuyer}
+        bundleProducts={product.bundledIn.map((b) => b.bundledProduct)}
+      />
+      <ProductReviews
+        productId={product.id}
+        reviews={product.reviews}
+        reviewCount={reviewCount}
+        avgRating={avgRating}
         customerEmail={customer?.email ?? null}
         customerName={customer?.name ?? null}
         isVerifiedBuyer={isVerifiedBuyer}

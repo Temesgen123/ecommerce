@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { updateProduct } from '@/app/actions/products';
 import ProductForm from '@/components/admin/ProductForm';
 import VariantsClient from '@/components/admin/VariantsClient';
+import BundleManager from '@/components/admin/BundleManager';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Edit Product' };
@@ -21,12 +22,21 @@ export default async function EditProductPage({ params }: Props) {
       where: { id },
       include: {
         variants: { orderBy: [{ color: 'asc' }, { size: 'asc' }] },
+        bundledIn: {
+          include: {
+            bundledProduct: {
+              select: { id: true, name: true, price: true, images: true },
+            },
+          },
+        },
       },
     }),
     prisma.category.findMany({ orderBy: { name: 'asc' } }),
   ]);
 
   if (!product) notFound();
+
+  const bundleProducts = product.bundledIn.map((b) => b.bundledProduct);
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -64,6 +74,14 @@ export default async function EditProductPage({ params }: Props) {
         variants={product.variants}
         basePrice={product.price}
       />
+
+      {/* ── Frequently Bought Together ── */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+        <BundleManager
+          productId={product.id}
+          initialBundleProducts={bundleProducts}
+        />
+      </div>
     </div>
   );
 }
