@@ -1,9 +1,11 @@
 'use server';
 
 import { z } from 'zod';
+import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { hash } from 'bcryptjs';
 import { Resend } from 'resend';
+import { authLimiter } from '@/lib/ratelimit';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -13,11 +15,31 @@ export type ResetFormState = {
   errors?: Record<string, string[]>;
 };
 
+async function getClientIP(): Promise<string> {
+  const headersList = await headers();
+  const forwarded = headersList.get('x-forwarded-for');
+  const realIp = headersList.get('x-real-ip');
+  return forwarded?.split(',')[0].trim() ?? realIp ?? '127.0.0.1';
+}
+
 // ─── Step 1: Request reset link ───────────────────────────────
 export async function requestPasswordReset(
   _prev: ResetFormState,
   formData: FormData,
 ): Promise<ResetFormState> {
+  // ── Rate limit by IP ──────────────────────────────────────
+  try {
+    const ip = await getClientIP();
+    const { success } = await authLimiter.limit(ip);
+    if (!success) {
+      return {
+        message: 'Too many attempts. Please wait 15 minutes and try again.',
+      };
+    }
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+  }
+
   const email = (formData.get('email') as string)?.trim().toLowerCase();
 
   if (!email || !z.string().email().safeParse(email).success) {
@@ -26,10 +48,25 @@ export async function requestPasswordReset(
 
   const customer = await prisma.customer.findUnique({ where: { email } });
 
+  // Always return success — don't reveal whether email exists
   if (!customer) {
     return { success: true };
   }
 
+  // ── Per-email cooldown (2 minutes) ────────────────────────
+  const recentToken = await prisma.passwordResetToken.findFirst({
+    where: {
+      customerId: customer.id,
+      createdAt: { gt: new Date(Date.now() - 1000 * 60 * 2) },
+    },
+  });
+
+  if (recentToken) {
+    // Silent success — don't reveal cooldown to potential attacker
+    return { success: true };
+  }
+
+  // Invalidate any existing unused tokens
   await prisma.passwordResetToken.deleteMany({
     where: { customerId: customer.id, usedAt: null },
   });
@@ -37,7 +74,7 @@ export async function requestPasswordReset(
   const token = await prisma.passwordResetToken.create({
     data: {
       customerId: customer.id,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
     },
   });
 
@@ -47,16 +84,8 @@ export async function requestPasswordReset(
       ? email
       : process.env.EMAIL_TEST_ADDRESS!;
 
-  console.log('──── PASSWORD RESET DEBUG ────');
-  console.log('RESEND_API_KEY set:', !!process.env.RESEND_API_KEY);
-  console.log('RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL);
-  console.log('EMAIL_TEST_ADDRESS:', process.env.EMAIL_TEST_ADDRESS);
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('Sending to:', toEmail);
-  console.log('Reset URL:', resetUrl);
-
   try {
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
       to: toEmail,
       subject: 'Reset your password',
@@ -79,8 +108,6 @@ export async function requestPasswordReset(
       console.error('Resend error:', error);
       return { message: `Email failed to send: ${error.message}` };
     }
-
-    console.log('Resend success, email id:', data?.id);
   } catch (err) {
     console.error('Resend exception:', err);
     return { message: 'Failed to send reset email. Please try again.' };
@@ -94,6 +121,19 @@ export async function resetPassword(
   _prev: ResetFormState,
   formData: FormData,
 ): Promise<ResetFormState> {
+  // ── Rate limit by IP ──────────────────────────────────────
+  try {
+    const ip = await getClientIP();
+    const { success } = await authLimiter.limit(ip);
+    if (!success) {
+      return {
+        message: 'Too many attempts. Please wait 15 minutes and try again.',
+      };
+    }
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+  }
+
   const token = (formData.get('token') as string)?.trim();
   const password = (formData.get('password') as string) ?? '';
   const confirm = (formData.get('confirm') as string) ?? '';
@@ -121,22 +161,11 @@ export async function resetPassword(
   }
 
   const hashed = await hash(password, 12);
-  console.log('──── RESET PASSWORD DEBUG ────');
-  console.log('Customer ID:', record.customerId);
-  console.log('New hash:', hashed);
 
   await prisma.customer.update({
     where: { id: record.customerId },
     data: { password: hashed },
   });
-
-  // Verify it was saved
-  const updated = await prisma.customer.findUnique({
-    where: { id: record.customerId },
-    select: { password: true },
-  });
-  console.log('Saved hash in DB:', updated?.password);
-  console.log('Hashes match:', updated?.password === hashed);
 
   await prisma.passwordResetToken.update({
     where: { token },
