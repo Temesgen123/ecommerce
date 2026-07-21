@@ -111,7 +111,6 @@ export async function resetPassword(
 
   const record = await prisma.passwordResetToken.findUnique({
     where: { token },
-    include: { customer: true },
   });
 
   if (!record || record.usedAt || record.expiresAt < new Date()) {
@@ -123,19 +122,19 @@ export async function resetPassword(
 
   const hashed = await hash(password, 12);
 
-  await prisma.$transaction([
-    prisma.customer.update({
-      where: { id: record.customerId },
-      data: { password: hashed },
-    }),
-    prisma.passwordResetToken.update({
-      where: { token },
-      data: { usedAt: new Date() },
-    }),
-    prisma.customerSession.deleteMany({
-      where: { customerId: record.customerId },
-    }),
-  ]);
+  await prisma.customer.update({
+    where: { id: record.customerId },
+    data: { password: hashed },
+  });
+
+  await prisma.passwordResetToken.update({
+    where: { token },
+    data: { usedAt: new Date() },
+  });
+
+  await prisma.customerSession.deleteMany({
+    where: { customerId: record.customerId },
+  });
 
   return { success: true };
 }
