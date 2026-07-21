@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { hash, compare } from 'bcryptjs';
+import { hash } from 'bcryptjs';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -26,12 +26,10 @@ export async function requestPasswordReset(
 
   const customer = await prisma.customer.findUnique({ where: { email } });
 
-  // Always return success — don't reveal whether email exists
   if (!customer) {
     return { success: true };
   }
 
-  // Invalidate any existing unused tokens for this customer
   await prisma.passwordResetToken.deleteMany({
     where: { customerId: customer.id, usedAt: null },
   });
@@ -39,33 +37,54 @@ export async function requestPasswordReset(
   const token = await prisma.passwordResetToken.create({
     data: {
       customerId: customer.id,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60),
     },
   });
 
   const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/account/reset-password?token=${token.token}`;
+  const toEmail =
+    process.env.NODE_ENV === 'production'
+      ? email
+      : process.env.EMAIL_TEST_ADDRESS!;
 
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
-    to:
-      process.env.NODE_ENV === 'production'
-        ? email
-        : process.env.EMAIL_TEST_ADDRESS!,
-    subject: 'Reset your password',
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-        <h2>Reset your password</h2>
-        <p>We received a request to reset the password for your account.</p>
-        <p>Click the button below to choose a new password. This link expires in <strong>1 hour</strong>.</p>
-        <a href="${resetUrl}"
-           style="display:inline-block;margin:16px 0;padding:12px 24px;background:#1e3a5f;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
-          Reset Password
-        </a>
-        <p style="color:#6b7280;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>
-        <p style="color:#6b7280;font-size:12px;">Link: ${resetUrl}</p>
-      </div>
-    `,
-  });
+  console.log('──── PASSWORD RESET DEBUG ────');
+  console.log('RESEND_API_KEY set:', !!process.env.RESEND_API_KEY);
+  console.log('RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL);
+  console.log('EMAIL_TEST_ADDRESS:', process.env.EMAIL_TEST_ADDRESS);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('Sending to:', toEmail);
+  console.log('Reset URL:', resetUrl);
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
+      to: toEmail,
+      subject: 'Reset your password',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+          <h2>Reset your password</h2>
+          <p>We received a request to reset the password for your account.</p>
+          <p>Click the button below to choose a new password. This link expires in <strong>1 hour</strong>.</p>
+          <a href="${resetUrl}"
+             style="display:inline-block;margin:16px 0;padding:12px 24px;background:#1e3a5f;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
+            Reset Password
+          </a>
+          <p style="color:#6b7280;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>
+          <p style="color:#6b7280;font-size:12px;">Link: ${resetUrl}</p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { message: `Email failed to send: ${error.message}` };
+    }
+
+    console.log('Resend success, email id:', data?.id);
+  } catch (err) {
+    console.error('Resend exception:', err);
+    return { message: 'Failed to send reset email. Please try again.' };
+  }
 
   return { success: true };
 }
@@ -113,7 +132,6 @@ export async function resetPassword(
       where: { token },
       data: { usedAt: new Date() },
     }),
-    // Invalidate all sessions so old password can't be reused
     prisma.customerSession.deleteMany({
       where: { customerId: record.customerId },
     }),
