@@ -121,11 +121,22 @@ export async function resetPassword(
   }
 
   const hashed = await hash(password, 12);
+  console.log('──── RESET PASSWORD DEBUG ────');
+  console.log('Customer ID:', record.customerId);
+  console.log('New hash:', hashed);
 
   await prisma.customer.update({
     where: { id: record.customerId },
     data: { password: hashed },
   });
+
+  // Verify it was saved
+  const updated = await prisma.customer.findUnique({
+    where: { id: record.customerId },
+    select: { password: true },
+  });
+  console.log('Saved hash in DB:', updated?.password);
+  console.log('Hashes match:', updated?.password === hashed);
 
   await prisma.passwordResetToken.update({
     where: { token },
