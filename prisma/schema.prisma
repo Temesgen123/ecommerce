@@ -250,6 +250,7 @@ model Customer {
   addresses CustomerAddress[]
   sessions  CustomerSession[]
   cart      Cart?
+  passwordResetTokens PasswordResetToken[]
   @@map("customers")
   wishlists Wishlist[]
 }
@@ -420,4 +421,18 @@ model ProductBundle {
   @@unique([productId, bundledProductId])
   @@index([productId])
   @@map("product_bundles")
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  token      String   @unique @default(cuid())
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([token])
+  @@index([customerId])
+  @@map("password_reset_tokens")
 }
