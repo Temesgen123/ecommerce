@@ -2,6 +2,7 @@
 import { useActionState } from 'react';
 import { loginCustomer, type AuthFormState } from '@/app/actions/customer';
 import GoogleSignInButton from '@/components/store/GoogleSignInButton';
+import Link from 'next/link';
 
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState<
@@ -10,7 +11,6 @@ export default function LoginForm() {
   >(loginCustomer, {});
   const err = state.errors ?? {};
 
-  // Show google_failed error from callback redirect
   const searchError =
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('error')
@@ -77,12 +77,21 @@ export default function LoginForm() {
           )}
         </div>
         <div className="space-y-1.5">
-          <label
-            className="text-xs font-semibold uppercase tracking-wide"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            Password
-          </label>
+          <div className="flex items-center justify-between">
+            <label
+              className="text-xs font-semibold uppercase tracking-wide"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Password
+            </label>
+            <Link
+              href="/account/forgot-password"
+              className="text-xs font-medium hover:underline"
+              style={{ color: 'var(--navy-700)' }}
+            >
+              Forgot password?
+            </Link>
+          </div>
           <input
             name="password"
             type="password"
