@@ -57,7 +57,7 @@ export default function Navbar({
               height={30}
               className="rounded-full hidden sm:block"
             />
-            My<span style={{ color: 'var(--accent)' }}>Store</span>
+            Next<span style={{ color: 'var(--accent)' }}>Shop</span>
           </Link>
         </div>
 
