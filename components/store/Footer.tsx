@@ -22,7 +22,7 @@ export default function Footer() {
                 style={{ color: 'var(--accent)' }}
               />
               <span className="text-base font-bold text-white">
-                My<span style={{ color: 'var(--accent)' }}>Store</span>
+                Next<span style={{ color: 'var(--accent)' }}>Shop</span>
               </span>
             </div>
             <p
