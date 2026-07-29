@@ -30,11 +30,7 @@ const navItems = [
   { label: 'Products', href: '/admin/products', icon: Package },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { label: 'Categories', href: '/admin/categories', icon: Tag },
-  {
-    label: 'Products (Bulk)',
-    href: '/admin/products-bulk',
-    icon: Boxes,
-  },
+  { label: 'Products (Bulk)', href: '/admin/products-bulk', icon: Boxes },
   { label: 'Discounts', href: '/admin/discounts', icon: Percent },
   { label: 'Reviews', href: '/admin/reviews', icon: Star },
   { label: 'Stock Alerts', href: '/admin/stock-alerts', icon: AlertTriangle },
@@ -45,13 +41,12 @@ const navItems = [
   { label: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
 ];
 
-<Link href="/admin/customers">Customers</Link>;
 export default function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
 
   return (
     <aside
-      className="flex h-screen w-56 flex-shrink-0 flex-col bg-white"
+      className="flex flex-col h-screen w-56 flex-shrink-0  bg-white"
       style={{ borderRight: '1px solid var(--border-subtle)' }}
     >
       {/* Logo */}
@@ -63,7 +58,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
         }}
       >
         <span className="text-base font-bold text-white">
-          My<span style={{ color: 'var(--accent)' }}>Store</span>
+          Next<span style={{ color: 'var(--accent)' }}>Shop</span>
           <span className="ml-2 text-xs font-normal opacity-60">Admin</span>
         </span>
       </div>

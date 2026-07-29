@@ -25,7 +25,7 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(getInitialError);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -117,7 +117,7 @@ export default function LoginPage() {
         style={{ background: 'var(--navy-900)' }}
       >
         <p className="text-4xl font-extrabold text-white">
-          My<span style={{ color: 'var(--accent)' }}>Store</span>
+          Next<span style={{ color: 'var(--accent)' }}>Shop</span>
         </p>
         <p className="mt-3 text-base" style={{ color: 'var(--navy-100)' }}>
           Admin Panel — Manage your store
@@ -132,7 +132,7 @@ export default function LoginPage() {
             className="mb-8 text-center text-2xl font-extrabold lg:hidden"
             style={{ color: 'var(--navy-900)' }}
           >
-            My<span style={{ color: 'var(--accent)' }}>Store</span>
+            Next<span style={{ color: 'var(--accent)' }}>Shop</span>
           </p>
 
           <h2
