@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, Fragment } from 'react';
 import Image from 'next/image';
 import { Pencil, Trash2, X, Tag } from 'lucide-react';
 import VariantForm from './VariantForm';
@@ -131,8 +131,8 @@ export default function VariantsClient({
               {variants.map((variant) => {
                 const label = variantLabel(variant);
                 return (
-                  <>
-                    <tr key={variant.id} className="hover:bg-gray-50">
+                  <Fragment key={variant.id}>
+                    <tr className="hover:bg-gray-50">
                       {/* Variant image thumbnail */}
                       <td className="px-4 py-2.5">
                         {variant.image ? (
@@ -231,7 +231,7 @@ export default function VariantsClient({
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

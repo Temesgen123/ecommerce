@@ -74,9 +74,47 @@ export default async function ProductsPage({ searchParams }: Props) {
   if (minPrice) priceFilter.gte = Math.round(parseFloat(minPrice) * 100);
   if (maxPrice) priceFilter.lte = Math.round(parseFloat(maxPrice) * 100);
 
+  // ── Resolve category filter ─────────────────────────────────────────────
+  // When browsing a top-level category (e.g. "Shoes"), include products from
+  // all its subcategories too (Men / Women / Kids).
+  // When browsing a subcategory (e.g. "shoes-men"), exact match only.
+  let categoryFilter: any = {};
+
+  if (category) {
+    const cat = await prisma.category.findUnique({
+      where: { slug: category },
+      select: {
+        id: true,
+        parentId: true,
+        children: { select: { id: true } },
+      },
+    });
+
+    if (cat) {
+      const isTopLevel = cat.parentId === null;
+      const hasChildren = cat.children.length > 0;
+
+      if (isTopLevel && hasChildren) {
+        // Parent category — include direct products AND all children's products
+        categoryFilter = {
+          category: {
+            OR: [
+              { id: cat.id }, // assigned directly to e.g. "Shoes"
+              { parentId: cat.id }, // assigned to Men / Women / Kids
+            ],
+          },
+        };
+      } else {
+        // Subcategory or top-level with no children — exact match
+        categoryFilter = { categoryId: cat.id };
+      }
+    }
+  }
+
+  // ── Build where clause ──────────────────────────────────────────────────
   const where: any = {
     published: true,
-    ...(category ? { category: { slug: category } } : {}),
+    ...categoryFilter,
     ...(Object.keys(priceFilter).length ? { price: priceFilter } : {}),
     ...(searchTerm
       ? {

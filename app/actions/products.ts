@@ -174,32 +174,27 @@ export async function checkSlugAvailable(
   return false;
 }
 
-// Update Stock
+// ─── Update Stock ─────────────────────────────────────────────
 export async function updateStock(
   productId: string,
   stock: number,
   variantId?: string,
 ): Promise<void> {
   if (variantId) {
-    // Update the specific variant's stock
     await prisma.productVariant.update({
       where: { id: variantId },
       data: { stock },
     });
   } else {
-    // Legacy fallback — updates the base Product.stock field
-    // (used before variants existed, kept for safety)
     await prisma.product.update({
       where: { id: productId },
       data: { stock },
     });
   }
-
   revalidatePath('/admin/products');
 }
 
 // ─── Bundles ──────────────────────────────────────────────────
-
 export async function addBundleProduct(
   productId: string,
   bundledProductId: string,
@@ -238,7 +233,6 @@ export async function searchProductsForBundle(
 ): Promise<{ id: string; name: string; price: number; images: string[] }[]> {
   if (!query || query.trim().length < 2) return [];
 
-  // Get IDs already in the bundle to exclude them
   const existing = await prisma.productBundle.findMany({
     where: { productId },
     select: { bundledProductId: true },
@@ -256,5 +250,152 @@ export async function searchProductsForBundle(
     },
     select: { id: true, name: true, price: true, images: true },
     take: 6,
+  });
+}
+
+// ─── Storefront product listing ───────────────────────────────
+//
+// Called from app/(store)/products/page.tsx.
+// When browsing a top-level category (e.g. "Shoes") it automatically
+// includes products from all subcategories (Men / Women / Kids).
+// When browsing a subcategory it returns only that subcategory's products.
+
+const PAGE_SIZE = 12;
+
+export type SortOption = 'newest' | 'price-asc' | 'price-desc';
+
+interface ProductListParams {
+  categorySlug?: string;
+  page?: number;
+  sort?: SortOption;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+export async function getProducts({
+  categorySlug,
+  page = 1,
+  sort = 'newest',
+  minPrice,
+  maxPrice,
+}: ProductListParams) {
+  // ── Category filter ─────────────────────────────────────────
+  let categoryFilter: object | undefined;
+
+  if (categorySlug) {
+    const category = await prisma.category.findUnique({
+      where: { slug: categorySlug },
+      select: {
+        id: true,
+        parentId: true,
+        children: { select: { id: true } },
+      },
+    });
+
+    if (category) {
+      const isTopLevel = category.parentId === null;
+      const hasChildren = category.children.length > 0;
+
+      if (isTopLevel && hasChildren) {
+        // Parent category — pull products from the parent AND all children.
+        // e.g. browsing "Shoes" returns Men's + Women's + Kids' Shoes.
+        categoryFilter = {
+          category: {
+            OR: [
+              { id: category.id }, // assigned directly to "Shoes"
+              { parentId: category.id }, // assigned to Men/Women/Kids
+            ],
+          },
+        };
+      } else {
+        // Subcategory or top-level with no children — exact match only.
+        categoryFilter = { categoryId: category.id };
+      }
+    }
+  }
+
+  // ── Price filter ────────────────────────────────────────────
+  const priceFilter =
+    minPrice !== undefined || maxPrice !== undefined
+      ? {
+          price: {
+            ...(minPrice !== undefined ? { gte: minPrice } : {}),
+            ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+          },
+        }
+      : {};
+
+  // ── Sort ────────────────────────────────────────────────────
+  const orderBy =
+    sort === 'price-asc'
+      ? { price: 'asc' as const }
+      : sort === 'price-desc'
+        ? { price: 'desc' as const }
+        : { createdAt: 'desc' as const };
+
+  // ── Query ───────────────────────────────────────────────────
+  const where = { published: true, ...priceFilter, ...categoryFilter };
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            // Include parent so breadcrumbs can show  Shoes › Men
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
+        variants: {
+          select: {
+            id: true,
+            color: true,
+            size: true,
+            price: true,
+            stock: true,
+            image: true,
+          },
+        },
+        _count: {
+          select: { reviews: { where: { approved: true } } },
+        },
+      },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    products,
+    total,
+    pageCount: Math.ceil(total / PAGE_SIZE),
+  };
+}
+
+// ─── Category tree for storefront nav ─────────────────────────
+//
+// Returns top-level categories with their children nested inside.
+// Used by Navbar / CategoryNavBar to render dropdowns:
+//   Shoes ▾  →  Men | Women | Kids
+//
+// Call this in your server layout or page and pass the result
+// down to <CategoryNavBar categories={tree} />.
+
+export async function getCategoryTree() {
+  return prisma.category.findMany({
+    where: { parentId: null }, // top-level only
+    orderBy: { name: 'asc' },
+    include: {
+      children: {
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, slug: true },
+      },
+    },
   });
 }

@@ -6,9 +6,10 @@ import { getCustomer } from '@/lib/customer-auth';
 import { prisma } from '@/lib/prisma';
 import CrispChat from '@/components/Crisp';
 import CompareDrawer from '@/components/store/CompareDrawer';
+import { getCategoryTree } from '@/lib/category-tree';
 
 export const metadata: Metadata = {
-  title: { template: '%s | MyStore', default: 'MyStore' },
+  title: { template: '%s | NextShop', default: 'NextShop' },
 };
 
 export default async function StoreLayout({
@@ -17,16 +18,14 @@ export default async function StoreLayout({
   children: React.ReactNode;
 }) {
   const customer = await getCustomer();
-
   const [wishlistCount, categories] = await Promise.all([
     customer
       ? prisma.wishlist.count({ where: { customerId: customer.id } })
       : Promise.resolve(0),
-    prisma.category.findMany({
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, slug: true },
-    }),
+    getCategoryTree(),
   ]);
+
+  console.log('TREE:', JSON.stringify(categories, null, 2));
 
   return (
     <CartProvider>

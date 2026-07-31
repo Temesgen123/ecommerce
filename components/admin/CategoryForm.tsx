@@ -3,12 +3,24 @@
 import { useActionState, useEffect, useState } from 'react';
 import type { CategoryFormState } from '@/app/actions/categories';
 
+// Flat list of top-level categories passed in so the user can pick a parent
+export interface ParentOption {
+  id: string;
+  name: string;
+}
+
 interface CategoryFormProps {
   action: (
     prev: CategoryFormState,
     formData: FormData,
   ) => Promise<CategoryFormState>;
-  defaultValues?: { name?: string; slug?: string; description?: string };
+  defaultValues?: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    parentId?: string | null;
+  };
+  parentOptions?: ParentOption[]; // top-level categories available as parents
   submitLabel?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -26,6 +38,7 @@ function slugify(str: string) {
 export default function CategoryForm({
   action,
   defaultValues = {},
+  parentOptions = [],
   submitLabel = 'Save',
   onSuccess,
   onCancel,
@@ -45,7 +58,6 @@ export default function CategoryForm({
     if (!slugManuallyEdited) setSlug(slugify(name));
   }, [name, slugManuallyEdited]);
 
-  // Signal success to parent (e.g. close edit row)
   useEffect(() => {
     if (state.message === 'ok') onSuccess?.();
   }, [state.message, onSuccess]);
@@ -66,7 +78,7 @@ export default function CategoryForm({
             name="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Apparel"
+            placeholder="e.g. Men's Shoes"
             className={field(!!err.name)}
           />
           {err.name && <p className="text-xs text-red-600">{err.name[0]}</p>}
@@ -82,11 +94,40 @@ export default function CategoryForm({
               setSlug(e.target.value);
               setSlugManuallyEdited(true);
             }}
-            placeholder="apparel"
+            placeholder="mens-shoes"
             className={field(!!err.slug)}
           />
           {err.slug && <p className="text-xs text-red-600">{err.slug[0]}</p>}
         </div>
+      </div>
+
+      {/* Parent Category */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-600">
+          Parent Category{' '}
+          <span className="text-gray-400">
+            (optional — leave blank for top-level)
+          </span>
+        </label>
+        <select
+          name="parentId"
+          defaultValue={defaultValues.parentId ?? ''}
+          className={field(!!err.parentId)}
+        >
+          <option value="">— None (top-level category) —</option>
+          {parentOptions.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.name}
+            </option>
+          ))}
+        </select>
+        {err.parentId && (
+          <p className="text-xs text-red-600">{err.parentId[0]}</p>
+        )}
+        <p className="text-xs text-gray-400">
+          Example: select &quot;Shoes&quot; here to create &quot;Men&quot;,
+          &quot;Women&quot;, or &quot;Kids&quot; as subcategories under it.
+        </p>
       </div>
 
       {/* Description */}

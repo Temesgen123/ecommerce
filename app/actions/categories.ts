@@ -16,9 +16,9 @@ const CategorySchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       'Slug must be lowercase with hyphens only',
     ),
-  // slug intentionally NOT sanitized via sanitizedString — the regex
-  // above already restricts it to a safe character set
   description: sanitizedString({ min: 0, max: 256 }).optional(),
+  // parentId is optional — null means top-level category
+  parentId: z.string().cuid().optional().nullable(),
 });
 
 export type CategoryFormState = {
@@ -31,17 +31,26 @@ export async function createCategory(
   _prev: CategoryFormState,
   formData: FormData,
 ): Promise<CategoryFormState> {
+  const rawParentId = formData.get('parentId');
+
   const parsed = CategorySchema.safeParse({
     name: formData.get('name'),
     slug: formData.get('slug'),
     description: formData.get('description') || undefined,
+    // Empty string means "no parent" — convert to null
+    parentId: rawParentId && rawParentId !== '' ? rawParentId : null,
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
+  // Guard: a category cannot be its own parent (safety check)
+  // Not needed on create since no id yet, but good to document intent.
+
   try {
+    console.log('RAW parentId:', rawParentId);
+    console.log('PARSED data:', JSON.stringify(parsed.data));
     await prisma.category.create({ data: parsed.data });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -53,6 +62,7 @@ export async function createCategory(
   }
 
   revalidatePath('/admin/categories');
+  revalidatePath('/');
   return { message: 'ok' };
 }
 
@@ -62,14 +72,39 @@ export async function updateCategory(
   _prev: CategoryFormState,
   formData: FormData,
 ): Promise<CategoryFormState> {
+  const rawParentId = formData.get('parentId');
+
   const parsed = CategorySchema.safeParse({
     name: formData.get('name'),
     slug: formData.get('slug'),
     description: formData.get('description') || undefined,
+    parentId: rawParentId && rawParentId !== '' ? rawParentId : null,
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  // Guard: prevent a category from being set as a child of itself
+  if (parsed.data.parentId === id) {
+    return { errors: { parentId: ['A category cannot be its own parent.'] } };
+  }
+
+  // Guard: prevent circular references (a parent becoming a child of its own child)
+  if (parsed.data.parentId) {
+    const potentialParent = await prisma.category.findUnique({
+      where: { id: parsed.data.parentId },
+      select: { parentId: true },
+    });
+    if (potentialParent?.parentId === id) {
+      return {
+        errors: {
+          parentId: [
+            'Circular reference: that category is already a child of this one.',
+          ],
+        },
+      };
+    }
   }
 
   try {
@@ -84,12 +119,15 @@ export async function updateCategory(
   }
 
   revalidatePath('/admin/categories');
+  revalidatePath('/');
   return { message: 'ok' };
 }
 
 // ─── Delete ───────────────────────────────────────────────────
 export async function deleteCategory(id: string): Promise<void> {
-  // Products with this category will have categoryId set to null (onDelete: SetNull)
+  // Children of this category will have parentId set to null (onDelete: SetNull)
+  // Products in this category will have categoryId set to null (onDelete: SetNull)
   await prisma.category.delete({ where: { id } });
   revalidatePath('/admin/categories');
+  revalidatePath('/');
 }

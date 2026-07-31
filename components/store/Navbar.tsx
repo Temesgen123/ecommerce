@@ -1,23 +1,18 @@
 'use client';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ShoppingBag, Heart, User } from 'lucide-react';
 import { useCartStore } from '@/lib/cart-store';
 import { useEffect, useState } from 'react';
 import MobileMenu from '@/components/store/MobileMenu';
 import CategoryNavBar from '@/components/store/CategoryNavBar';
 import NavSearchBar from '@/components/store/NavSearchBar';
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-}
+import type { NavCategory } from '@/lib/category-tree';
 
 interface NavbarProps {
   customerName?: string | null;
   wishlistCount?: number;
-  categories?: Category[];
+  categories?: NavCategory[];
 }
 
 export default function Navbar({
@@ -61,7 +56,7 @@ export default function Navbar({
           </Link>
         </div>
 
-        {/* Center — search (hidden on smallest screens, MobileMenu covers that) */}
+        {/* Center — search */}
         <div className="hidden flex-1 justify-center sm:flex">
           <div className="w-full max-w-md">
             <NavSearchBar />
@@ -169,7 +164,7 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Mobile search — full width, below main row, sm breakpoint and down */}
+      {/* Mobile search */}
       <div className="px-4 pb-3 sm:hidden">
         <NavSearchBar />
       </div>
