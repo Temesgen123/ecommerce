@@ -76,7 +76,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 };
 
 const FALLBACK_IMAGE =
-  'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/categories/fallback.jpg';
+  'https://res.cloudinary.com/deiqvcg5b/image/upload/categories/fallback.jpg';
 
 export default async function HomePage() {
   const [featured, newArrivals, categories] = await Promise.all([
