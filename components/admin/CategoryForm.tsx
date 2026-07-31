@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import type { CategoryFormState } from '@/app/actions/categories';
+import { useRef } from 'react';
+import Image from 'next/image';
 
 // Flat list of top-level categories passed in so the user can pick a parent
 export interface ParentOption {
@@ -19,6 +21,7 @@ interface CategoryFormProps {
     slug?: string;
     description?: string;
     parentId?: string | null;
+    image?: string | null;
   };
   parentOptions?: ParentOption[]; // top-level categories available as parents
   submitLabel?: string;
@@ -63,13 +66,15 @@ export default function CategoryForm({
   }, [state.message, onSuccess]);
 
   const err = state.errors ?? {};
+  const [preview, setPreview] = useState<string | null>(
+    defaultValues.image ?? null,
+  );
 
   return (
     <form action={formAction} className="space-y-3">
       {state.message && state.message !== 'ok' && (
         <p className="text-sm text-red-600">{state.message}</p>
       )}
-
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {/* Name */}
         <div className="space-y-1">
@@ -100,7 +105,6 @@ export default function CategoryForm({
           {err.slug && <p className="text-xs text-red-600">{err.slug[0]}</p>}
         </div>
       </div>
-
       {/* Parent Category */}
       <div className="space-y-1">
         <label className="text-xs font-medium text-gray-600">
@@ -129,7 +133,39 @@ export default function CategoryForm({
           &quot;Women&quot;, or &quot;Kids&quot; as subcategories under it.
         </p>
       </div>
-
+      {/* Image Upload */}
+      // Inside JSX:
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-600">
+          Image <span className="text-gray-400">(optional)</span>
+        </label>
+        {preview && (
+          <div className="relative w-24 h-24 mb-1">
+            <Image
+              src={preview}
+              alt="preview"
+              fill
+              className="object-cover rounded-md"
+            />
+          </div>
+        )}
+        <input
+          name="image"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) setPreview(URL.createObjectURL(file));
+          }}
+          className="text-sm text-gray-600"
+        />
+        {/* Pass existing image URL so server action knows current value on edit */}
+        <input
+          type="hidden"
+          name="existingImage"
+          value={defaultValues.image ?? ''}
+        />
+      </div>
       {/* Description */}
       <div className="space-y-1">
         <label className="text-xs font-medium text-gray-600">
@@ -142,7 +178,6 @@ export default function CategoryForm({
           className={field(false)}
         />
       </div>
-
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1">
         <button

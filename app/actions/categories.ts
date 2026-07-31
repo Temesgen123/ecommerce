@@ -4,7 +4,28 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { sanitizedString } from '@/lib/sanitize';
+import { v2 as cloudinary } from 'cloudinary';
 
+//
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+async function uploadImageToCloudinary(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream({ folder: 'nextshop/categories' }, (error, result) => {
+        if (error || !result) return reject(error);
+        resolve(result.secure_url);
+      })
+      .end(buffer);
+  });
+}
 // ─── Validation ───────────────────────────────────────────────
 const CategorySchema = z.object({
   name: sanitizedString({ min: 1, max: 64, message: 'Name is required' }),
@@ -51,7 +72,14 @@ export async function createCategory(
   try {
     console.log('RAW parentId:', rawParentId);
     console.log('PARSED data:', JSON.stringify(parsed.data));
-    await prisma.category.create({ data: parsed.data });
+    const imageFile = formData.get('image') as File | null;
+    const existingImage = formData.get('existingImage') as string | null;
+
+    let imageUrl: string | null = existingImage || null;
+    if (imageFile && imageFile.size > 0) {
+      imageUrl = await uploadImageToCloudinary(imageFile);
+    }
+    await prisma.category.create({ data: { ...parsed.data, image: imageUrl } });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('Unique constraint')) {
@@ -108,7 +136,17 @@ export async function updateCategory(
   }
 
   try {
-    await prisma.category.update({ where: { id }, data: parsed.data });
+    const imageFile = formData.get('image') as File | null;
+    const existingImage = formData.get('existingImage') as string | null;
+
+    let imageUrl: string | null = existingImage || null;
+    if (imageFile && imageFile.size > 0) {
+      imageUrl = await uploadImageToCloudinary(imageFile);
+    }
+    await prisma.category.update({
+      where: { id },
+      data: { ...parsed.data, image: imageUrl },
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('Unique constraint')) {

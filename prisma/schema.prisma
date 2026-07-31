@@ -65,6 +65,7 @@ model Category {
   name        String     @unique
   slug        String     @unique
   description String?
+  image       String?
   imageUrl    String?
 
   // ── Hierarchy ──────────────────────────────

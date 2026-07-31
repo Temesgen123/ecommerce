@@ -310,7 +310,7 @@ export default async function HomePage() {
                   key={cat.id}
                   name={cat.name}
                   slug={cat.slug}
-                  image={CATEGORY_IMAGES[cat.slug] ?? FALLBACK_IMAGE}
+                  image={cat.image ?? CATEGORY_IMAGES[cat.slug] ?? null}
                   count={cat._count.products}
                 />
               ))}
