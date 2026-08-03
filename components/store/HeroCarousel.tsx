@@ -26,7 +26,7 @@ const slides = [
     sub: 'Latest gadgets at unbeatable prices. Limited time only.',
     cta: 'Shop Electronics',
     href: '/products?category=electronics',
-    gradient: 'from-orange-500/20 to-orange-600/5',
+    gradient: 'from-orange-500/30 to-orange-600/10',
     accent: '#f97316',
   },
   {
@@ -36,7 +36,7 @@ const slides = [
     sub: 'Be the first to get the newest products added to our store.',
     cta: 'See New Arrivals',
     href: '/products?sort=newest',
-    gradient: 'from-blue-500/20 to-blue-600/5',
+    gradient: 'from-blue-500/30 to-blue-600/10',
     accent: '#3b82f6',
   },
   {
@@ -46,7 +46,7 @@ const slides = [
     sub: 'No promo code needed. Free standard shipping on qualifying orders.',
     cta: 'Start Shopping',
     href: '/products',
-    gradient: 'from-green-500/20 to-green-600/5',
+    gradient: 'from-green-500/30 to-green-600/10',
     accent: '#22c55e',
   },
   {
@@ -56,7 +56,7 @@ const slides = [
     sub: 'Thousands of 5-star reviews. Shop what everyone is loving.',
     cta: 'View Top Picks',
     href: '/products',
-    gradient: 'from-purple-500/20 to-purple-600/5',
+    gradient: 'from-purple-500/30 to-purple-600/10',
     accent: '#a855f7',
   },
 ];
@@ -92,8 +92,9 @@ export default function HeroCarousel() {
     <div
       className="relative h-full w-full flex items-center rounded-2xl overflow-hidden p-8"
       style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.15)',
+        backdropFilter: 'blur(12px)',
       }}
     >
       {/* Gradient background */}

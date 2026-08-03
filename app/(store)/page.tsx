@@ -164,7 +164,7 @@ export default async function HomePage() {
             className="absolute -top-20 left-1/2 -translate-x-1/2 h-80 w-80 rounded-full blur-3xl opacity-20"
             style={{ background: 'var(--accent)' }}
           />
-          <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+          <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left — text content */}
               <div>
@@ -177,7 +177,7 @@ export default async function HomePage() {
                 >
                   Free shipping on orders over $50
                 </span>
-                <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl leading-tight">
+                <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl leading-tight">
                   Everything you need,{' '}
                   <span style={{ color: 'var(--accent)' }}>
                     delivered fast.
