@@ -216,6 +216,18 @@ export default function CategoryNavBar({ categories, activeCategory }: Props) {
                 color:
                   activeCategory === openCat.slug ? 'var(--accent)' : '#ffffff',
                 textDecoration: 'none',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background =
+                  'var(--navy-700)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--accent)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background =
+                  'transparent';
+                (e.currentTarget as HTMLElement).style.color =
+                  activeCategory === openCat.slug ? 'var(--accent)' : '#ffffff';
               }}
             >
               All {openCat.name}
@@ -229,24 +241,42 @@ export default function CategoryNavBar({ categories, activeCategory }: Props) {
             />
 
             {/* Children */}
-            {openCat.children.map((child) => (
-              <Link
-                key={child.id}
-                href={`/products?category=${child.slug}`}
-                onClick={() => setOpenSlug(null)}
-                style={{
-                  display: 'block',
-                  padding: '10px 16px',
-                  fontSize: '14px',
-                  color:
-                    activeCategory === child.slug ? 'var(--accent)' : '#ffffff',
-                  fontWeight: activeCategory === child.slug ? 600 : 400,
-                  textDecoration: 'none',
-                }}
-              >
-                {child.name}
-              </Link>
-            ))}
+            {openCat.children.map((child) => {
+              const isActive = activeCategory === child.slug;
+              return (
+                <Link
+                  key={child.id}
+                  href={`/products?category=${child.slug}`}
+                  onClick={() => setOpenSlug(null)}
+                  style={{
+                    display: 'block',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    color: isActive ? 'var(--accent)' : '#ffffff',
+                    fontWeight: isActive ? 600 : 400,
+                    textDecoration: 'none',
+                    borderRadius: '6px',
+                    margin: '2px 6px',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background =
+                      'var(--navy-700)';
+                    (e.currentTarget as HTMLElement).style.color =
+                      'var(--accent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background =
+                      'transparent';
+                    (e.currentTarget as HTMLElement).style.color = isActive
+                      ? 'var(--accent)'
+                      : '#ffffff';
+                  }}
+                >
+                  {child.name}
+                </Link>
+              );
+            })}
           </div>,
           document.body,
         )}
