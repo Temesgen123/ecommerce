@@ -250,7 +250,7 @@ export default function CategoryNavBar({ categories, activeCategory }: Props) {
                   onClick={() => setOpenSlug(null)}
                   style={{
                     display: 'block',
-                    padding: '8px 16px',
+                    padding: '5px 16px',
                     fontSize: '14px',
                     color: isActive ? 'var(--accent)' : '#ffffff',
                     fontWeight: isActive ? 600 : 400,
