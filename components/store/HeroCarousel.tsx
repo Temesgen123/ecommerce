@@ -5,8 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Replace each URL below with the corresponding value from
-// prisma/hero-images.json after running fetch-hero-images.ts.
 const HERO_IMAGES: Record<string, string> = {
   electronics:
     'https://res.cloudinary.com/deiqvcg5b/image/upload/v1782562618/hero-slides/electronics.jpg',
@@ -26,7 +24,7 @@ const slides = [
     sub: 'Latest gadgets at unbeatable prices. Limited time only.',
     cta: 'Shop Electronics',
     href: '/products?category=electronics',
-    gradient: 'from-orange-500/30 to-orange-600/10',
+    gradient: 'from-orange-500/15 to-transparent',
     accent: '#f97316',
   },
   {
@@ -36,7 +34,7 @@ const slides = [
     sub: 'Be the first to get the newest products added to our store.',
     cta: 'See New Arrivals',
     href: '/products?sort=newest',
-    gradient: 'from-blue-500/30 to-blue-600/10',
+    gradient: 'from-blue-500/15 to-transparent',
     accent: '#3b82f6',
   },
   {
@@ -46,7 +44,7 @@ const slides = [
     sub: 'No promo code needed. Free standard shipping on qualifying orders.',
     cta: 'Start Shopping',
     href: '/products',
-    gradient: 'from-green-500/30 to-green-600/10',
+    gradient: 'from-green-500/15 to-transparent',
     accent: '#22c55e',
   },
   {
@@ -56,7 +54,7 @@ const slides = [
     sub: 'Thousands of 5-star reviews. Shop what everyone is loving.',
     cta: 'View Top Picks',
     href: '/products',
-    gradient: 'from-purple-500/30 to-purple-600/10',
+    gradient: 'from-purple-500/15 to-transparent',
     accent: '#a855f7',
   },
 ];
@@ -83,7 +81,7 @@ export default function HeroCarousel() {
       }, 400);
     }, 4000);
     return () => clearInterval(timer);
-  }, []); // ← empty dependency array, no stale closure
+  }, []);
 
   const slide = slides[current];
   const imageUrl = HERO_IMAGES[slide.key];
@@ -92,39 +90,40 @@ export default function HeroCarousel() {
     <div
       className="relative h-full w-full flex items-center rounded-2xl overflow-hidden p-8"
       style={{
-        background: 'rgba(255,255,255,0.08)',
-        border: '1px solid rgba(255,255,255,0.15)',
+        background: 'rgba(30, 41, 59, 0.90)', // navy-800 tone
+        border: '1px solid rgba(255,255,255,0.12)',
         backdropFilter: 'blur(12px)',
       }}
     >
-      {/* Gradient background */}
+      {/* Gradient background — subtle tint only */}
       <div
         className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} transition-all duration-700`}
       />
 
-      {/* Decorative circle */}
+      {/* Decorative circles — toned down */}
       <div
-        className="absolute -right-8 -top-8 w-48 h-48 rounded-full blur-3xl opacity-20 transition-all duration-700"
+        className="absolute -right-8 -top-8 w-48 h-48 rounded-full blur-3xl opacity-10 transition-all duration-700"
         style={{ background: slide.accent }}
       />
       <div
-        className="absolute -left-8 -bottom-8 w-32 h-32 rounded-full blur-2xl opacity-10 transition-all duration-700"
+        className="absolute -left-8 -bottom-8 w-32 h-32 rounded-full blur-2xl opacity-5 transition-all duration-700"
         style={{ background: slide.accent }}
       />
 
-      {/* Content row — text left, image right (Amazon-style split) */}
+      {/* Content row */}
       <div className="relative z-10 flex w-full items-center gap-6">
         {/* Text */}
         <div
-          className="flex-1 min-w-0 transition-all duration-400"
+          className="flex-1 min-w-0"
           style={{
             opacity: animating ? 0 : 1,
             transform: animating ? 'translateY(8px)' : 'translateY(0)',
+            transition: 'opacity 0.4s, transform 0.4s',
           }}
         >
           <span
             className="inline-block rounded-full px-3 py-1 text-xs font-bold mb-4"
-            style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}
+            style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
           >
             {slide.badge}
           </span>
@@ -146,12 +145,13 @@ export default function HeroCarousel() {
           </Link>
         </div>
 
-        {/* Image — right side, matches Amazon's product-photo-beside-text layout */}
+        {/* Image */}
         <div
-          className="relative hidden h-40 w-40 flex-shrink-0 overflow-hidden rounded-xl sm:block transition-all duration-400"
+          className="relative hidden h-40 w-40 flex-shrink-0 overflow-hidden rounded-xl sm:block"
           style={{
             opacity: animating ? 0 : 1,
             transform: animating ? 'scale(0.95)' : 'scale(1)',
+            transition: 'opacity 0.4s, transform 0.4s',
           }}
         >
           <Image
@@ -168,14 +168,14 @@ export default function HeroCarousel() {
       <div className="absolute bottom-4 right-4 flex items-center gap-2 z-10">
         <button
           onClick={() => go(current - 1)}
-          className="rounded-full p-1.5 transition-colors"
+          className="rounded-full p-1.5 transition-colors hover:bg-white/20"
           style={{ background: 'rgba(255,255,255,0.1)' }}
         >
           <ChevronLeft className="w-4 h-4 text-white" />
         </button>
         <button
           onClick={() => go(current + 1)}
-          className="rounded-full p-1.5 transition-colors"
+          className="rounded-full p-1.5 transition-colors hover:bg-white/20"
           style={{ background: 'rgba(255,255,255,0.1)' }}
         >
           <ChevronRight className="w-4 h-4 text-white" />

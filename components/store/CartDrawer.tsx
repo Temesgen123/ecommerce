@@ -94,8 +94,6 @@ export default function CartDrawer() {
           ) : (
             <ul className="space-y-4">
               {items.map((item) => (
-                // Key on variantId so two variants of the same product
-                // render as distinct list items (e.g. Red/M and Blue/L)
                 <li
                   key={item.variantId}
                   className="flex gap-4"
@@ -138,7 +136,6 @@ export default function CartDrawer() {
                       {item.name}
                     </Link>
 
-                    {/* Variant label — e.g. "Blue / Large" */}
                     {item.variantLabel && (
                       <p
                         className="text-xs"
@@ -232,17 +229,25 @@ export default function CartDrawer() {
             <Link
               href="/checkout"
               onClick={closeCart}
-              className="btn-primary w-full py-3 text-sm font-bold disabled:opacity-60  block  rounded-xl text-center transition-opacity hover:opacity-90 "
-              // style={{ background: 'var(--navy-900)', color: '#fff' }}
+              className="btn-primary w-full py-3 text-sm font-bold disabled:opacity-60 block rounded-xl text-center transition-opacity hover:opacity-90"
             >
               Checkout · {formatPrice(totalPrice())}
             </Link>
-            <button
+            {/* View Cart link — navigates to the full /cart page */}
+            <Link
+              href="/cart"
               onClick={closeCart}
-              className="btn-secondary w-full py-3 text-sm   disabled:opacity-60  block  rounded-xl text-center transition-opacity hover:opacity-90"
+              className="btn-secondary w-full py-3 text-sm disabled:opacity-60 block rounded-xl text-center transition-opacity hover:opacity-90"
               style={{ color: 'var(--text-primary)' }}
             >
-              Continue Shopping
+              View cart
+            </Link>
+            <button
+              onClick={closeCart}
+              className="w-full py-2 text-sm text-center transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Continue shopping
             </button>
           </div>
         )}
