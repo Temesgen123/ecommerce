@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useCartStore } from '@/lib/cart-store';
 import { createCheckoutSession } from '@/app/actions/checkout';
 import { validateDiscountCode } from '@/app/actions/discounts';
-import { Loader2, ShoppingBag } from 'lucide-react';
+import { Loader2, ShoppingBag, Info } from 'lucide-react';
 import Link from 'next/link';
 import GiftCardInput from '@/components/store/GiftyCardInput';
 
@@ -130,7 +130,7 @@ export default function CheckoutPage() {
             <div className="space-y-2">
               {items.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.variantId}
                   className="flex items-center justify-between text-sm"
                 >
                   <span style={{ color: 'var(--text-secondary)' }}>
@@ -177,6 +177,22 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {/* Shipping — calculated by Stripe on next step */}
+              <div className="flex justify-between text-sm mb-1">
+                <span style={{ color: 'var(--text-muted)' }}>Shipping</span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  Calculated next step
+                </span>
+              </div>
+
+              {/* Tax — calculated by Stripe based on shipping address */}
+              <div className="flex justify-between text-sm mb-1">
+                <span style={{ color: 'var(--text-muted)' }}>Tax</span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  Calculated next step
+                </span>
+              </div>
+
               <div
                 className="flex justify-between font-bold text-base mt-2 pt-2"
                 style={{ borderTop: '1px solid var(--border-subtle)' }}
@@ -184,6 +200,18 @@ export default function CheckoutPage() {
                 <span style={{ color: 'var(--text-primary)' }}>Total</span>
                 <span style={{ color: 'var(--accent)' }}>
                   ${(total / 100).toFixed(2)}
+                </span>
+              </div>
+
+              {/* Clarify that total shown excludes shipping + tax */}
+              <div
+                className="flex items-start gap-1.5 mt-2 text-xs"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <Info className="h-3.5 w-3.5 mt-px flex-shrink-0" />
+                <span>
+                  Shipping and tax will be calculated on the next step based on
+                  your delivery address.
                 </span>
               </div>
             </div>

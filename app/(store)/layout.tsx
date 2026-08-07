@@ -25,8 +25,6 @@ export default async function StoreLayout({
     getCategoryTree(),
   ]);
 
-  console.log('TREE:', JSON.stringify(categories, null, 2));
-
   return (
     <CartProvider>
       <div className="flex min-h-screen flex-col">

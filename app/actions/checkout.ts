@@ -4,11 +4,10 @@ import { redirect } from 'next/navigation';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 
-// Cart item shape — variantId/variantLabel added for variant tracking
 type CartItem = {
-  id: string; // productId
-  variantId: string; // productVariant.id
-  variantLabel: string | null; // e.g. "Blue / Large"
+  id: string;
+  variantId: string;
+  variantLabel: string | null;
   name: string;
   price: number; // cents
   quantity: number;
@@ -50,7 +49,9 @@ export async function createCheckoutSession({
     }
   }
 
-  // Build Stripe line items
+  // Build Stripe line items.
+  // tax_code 'txcd_99999999' = generic taxable goods.
+  // Swap per-category codes if you need granular tax rates.
   const lineItems = items.map((item) => ({
     price_data: {
       currency: 'usd',
@@ -60,12 +61,13 @@ export async function createCheckoutSession({
           ? `${item.name} — ${item.variantLabel}`
           : item.name,
         images: item.image ? [item.image] : [],
+        tax_code: 'txcd_99999999',
       },
     },
     quantity: item.quantity,
   }));
 
-  // Handle discount code
+  // Discount coupon
   let stripeCouponId: string | undefined;
   if (discountCode && discountAmount > 0) {
     try {
@@ -81,7 +83,7 @@ export async function createCheckoutSession({
     }
   }
 
-  // Handle gift card discount
+  // Gift card coupon
   let stripeGiftCouponId: string | undefined;
   if (giftCardCode && giftCardDiscount > 0) {
     try {
@@ -97,8 +99,6 @@ export async function createCheckoutSession({
     }
   }
 
-  // Combine coupons if both apply
-
   const discounts: { coupon: string }[] = [];
   if (stripeCouponId) discounts.push({ coupon: stripeCouponId });
   if (stripeGiftCouponId) discounts.push({ coupon: stripeGiftCouponId });
@@ -107,6 +107,8 @@ export async function createCheckoutSession({
     mode: 'payment',
     line_items: lineItems,
     ...(discounts.length > 0 ? { discounts } : {}),
+
+    // ── Shipping ──────────────────────────────────────────────────────────
     shipping_address_collection: {
       allowed_countries: ['US', 'CA', 'GB', 'AU', 'ET'],
     },
@@ -120,6 +122,7 @@ export async function createCheckoutSession({
             minimum: { unit: 'business_day', value: 5 },
             maximum: { unit: 'business_day', value: 7 },
           },
+          tax_behavior: 'exclusive', // required for Stripe Tax to tax shipping
         },
       },
       {
@@ -131,14 +134,20 @@ export async function createCheckoutSession({
             minimum: { unit: 'business_day', value: 1 },
             maximum: { unit: 'business_day', value: 3 },
           },
+          tax_behavior: 'exclusive',
         },
       },
     ],
+
+    // ── Stripe Tax ────────────────────────────────────────────────────────
+    // Calculates tax automatically based on the customer's shipping address.
+    // REQUIRED: Activate Stripe Tax in your dashboard first:
+    // Dashboard → Settings → Tax → Activate
+    automatic_tax: { enabled: true },
+
     success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/checkout`,
     metadata: {
-      // variantId and variantLabel are now included in the cart JSON
-      // so the webhook can save them on each OrderItem
       cart: JSON.stringify(
         items.map((i) => ({
           id: i.id,
