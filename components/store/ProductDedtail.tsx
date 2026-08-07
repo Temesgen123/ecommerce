@@ -178,7 +178,7 @@ export default function ProductDetail({
       name: product.name,
       slug: product.slug,
       price: effectivePrice,
-      image: product.images[0] ?? null,
+      image: selectedVariant?.image ?? product.images[0] ?? null,
     });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
