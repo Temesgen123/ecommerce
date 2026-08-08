@@ -55,19 +55,22 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div
+      className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      style={{ overflowX: 'hidden' }}
+    >
       {/* Page header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <Link
           href="/products"
-          className="inline-flex items-center gap-1.5 text-sm mb-4 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm mb-3 transition-colors"
           style={{ color: 'var(--text-muted)' }}
         >
           <ArrowLeft className="h-4 w-4" />
           Continue shopping
         </Link>
         <h1
-          className="text-2xl font-bold"
+          className="text-xl sm:text-2xl font-bold"
           style={{ color: 'var(--text-primary)' }}
         >
           Shopping cart{' '}
@@ -80,10 +83,10 @@ export default function CartPage() {
         </h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
         {/* ── Cart items ── */}
         <div
-          className="rounded-2xl overflow-hidden"
+          className="rounded-2xl overflow-hidden w-full min-w-0"
           style={{ border: '1px solid var(--border-subtle)' }}
         >
           {/* Column headings — desktop only */}
@@ -104,7 +107,7 @@ export default function CartPage() {
             {items.map((item, idx) => (
               <li
                 key={item.variantId}
-                className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_auto] gap-4 px-6 py-5 items-center"
+                className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_auto] gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 items-start sm:items-center"
                 style={{
                   borderBottom:
                     idx < items.length - 1
@@ -115,8 +118,12 @@ export default function CartPage() {
               >
                 {/* Thumbnail */}
                 <div
-                  className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl"
-                  style={{ background: 'var(--bg-elevated)' }}
+                  className="relative h-18 w-18 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-xl mt-1 sm:mt-0"
+                  style={{
+                    background: 'var(--bg-elevated)',
+                    width: '72px',
+                    height: '72px',
+                  }}
                 >
                   {item.image ? (
                     <Image
@@ -136,12 +143,18 @@ export default function CartPage() {
                   )}
                 </div>
 
-                {/* Name + variant + price (mobile price shown here) */}
-                <div className="flex flex-col gap-0.5 min-w-0">
+                {/* Name + variant + price */}
+                <div className="flex flex-col gap-0.5 min-w-0 overflow-hidden">
                   <Link
                     href={`/products/${item.slug}`}
-                    className="text-sm font-semibold leading-snug hover:underline truncate"
-                    style={{ color: 'var(--text-primary)' }}
+                    className="text-sm font-semibold leading-snug hover:underline"
+                    style={{
+                      color: 'var(--text-primary)',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
                   >
                     {item.name}
                   </Link>
@@ -160,7 +173,7 @@ export default function CartPage() {
                     {formatPrice(item.price)}
                   </p>
 
-                  {/* Qty + remove — mobile only */}
+                  {/* Qty + remove + line total — mobile only */}
                   <div className="flex items-center gap-2 mt-2 sm:hidden">
                     <QuantityControl
                       quantity={item.quantity}
@@ -171,6 +184,12 @@ export default function CartPage() {
                         updateQuantity(item.variantId, item.quantity + 1)
                       }
                     />
+                    <span
+                      className="text-sm font-bold ml-2"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {formatPrice(item.price * item.quantity)}
+                    </span>
                     <button
                       onClick={() => removeItem(item.variantId)}
                       className="ml-auto p-1.5 rounded-lg transition-colors"
@@ -219,7 +238,7 @@ export default function CartPage() {
 
         {/* ── Order summary ── */}
         <div
-          className="rounded-2xl p-6 space-y-4 sticky top-24"
+          className="rounded-2xl p-5 sm:p-6 space-y-4 lg:sticky lg:top-24"
           style={{
             border: '1px solid var(--border-subtle)',
             background: 'var(--bg-surface)',
@@ -237,8 +256,8 @@ export default function CartPage() {
               label={`Subtotal (${count} ${count === 1 ? 'item' : 'items'})`}
               value={formatPrice(subtotal)}
             />
-            <SummaryRow label="Shipping" value="Calculated at checkout" muted />
-            <SummaryRow label="Tax" value="Calculated at checkout" muted />
+            <SummaryRow label="Shipping" value="At checkout" muted />
+            <SummaryRow label="Tax" value="At checkout" muted />
           </div>
 
           <div
@@ -259,8 +278,11 @@ export default function CartPage() {
                 {formatPrice(subtotal)}
               </span>
             </div>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-              Promo codes and gift cards can be applied at checkout.
+            <p
+              className="text-xs mt-1 leading-relaxed"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Promo codes &amp; gift cards applied at checkout.
             </p>
           </div>
 
@@ -346,9 +368,12 @@ function SummaryRow({
   muted?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+    <div className="flex items-start justify-between gap-2 text-sm">
+      <span className="shrink-0" style={{ color: 'var(--text-secondary)' }}>
+        {label}
+      </span>
       <span
+        className="text-right"
         style={{ color: muted ? 'var(--text-muted)' : 'var(--text-primary)' }}
       >
         {value}

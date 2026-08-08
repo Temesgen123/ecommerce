@@ -85,7 +85,7 @@ export default function MobileMenu({ customerName }: Props) {
 
       {/* Slide-in drawer */}
       <div
-        className="fixed top-0 left-0 h-full w-72 z-50 sm:hidden flex flex-col transition-transform duration-300"
+        className="fixed top-0 left-0 h-full w-36 z-50 sm:hidden flex flex-col transition-transform duration-300"
         style={{
           background: 'var(--navy-900)',
           transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
@@ -102,7 +102,7 @@ export default function MobileMenu({ customerName }: Props) {
             onClick={close}
             className="text-lg font-bold text-white"
           >
-            My<span style={{ color: 'var(--accent)' }}>Store</span>
+            Next<span style={{ color: 'var(--accent)' }}>Shop</span>
           </Link>
           <button
             onClick={close}

@@ -30,10 +30,11 @@ export default function Navbar({
 
   return (
     <header
-      className="sticky top-0 z-40"
+      className="sticky top-0 z-40 w-full"
       style={{
         background: 'var(--navy-900)',
         borderBottom: '1px solid var(--navy-800)',
+        overflowX: 'hidden',
       }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">

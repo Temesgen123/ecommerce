@@ -43,7 +43,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-grey-300 p-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>

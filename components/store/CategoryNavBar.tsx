@@ -90,7 +90,7 @@ export default function CategoryNavBar({ categories, activeCategory }: Props) {
     <>
       <div
         className="w-full border-t"
-        style={{ borderColor: 'var(--navy-800)' }}
+        style={{ borderColor: 'var(--navy-800)', overflowX: 'hidden' }}
       >
         <div className="w-full overflow-x-auto scrollbar-hide">
           <div className="mx-auto flex max-w-6xl gap-2 px-4 py-2 sm:px-6">

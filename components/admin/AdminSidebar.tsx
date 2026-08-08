@@ -46,7 +46,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
 
   return (
     <aside
-      className="flex flex-col h-screen w-56 flex-shrink-0  bg-white"
+      className="flex flex-col h-screen w-46 flex-shrink-0 "
       style={{ borderRight: '1px solid var(--border-subtle)' }}
     >
       {/* Logo */}
@@ -117,7 +117,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
         </div>
         <button
           onClick={() => signOut({ callbackUrl: '/admin/login' })}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-red-50"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all  hover:bg-red-50"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={(e) =>
             ((e.currentTarget as HTMLElement).style.color = 'var(--error-text)')
