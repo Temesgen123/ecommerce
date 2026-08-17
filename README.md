@@ -1,6 +1,6 @@
 # NextShop — Full-Stack E-Commerce Platform
 
-A production-ready, fully-featured e-commerce application built with Next.js 15, TypeScript, and PostgreSQL. Includes a complete admin panel, customer accounts, Stripe payments, loyalty program, gift cards, abandoned cart recovery, a dedicated delivery driver system, Google OAuth for customers, product bundles, collapsible reviews, forgot password flow, and more — everything needed to launch a real online store with in-house or third-party delivery operations.
+A production-ready, fully-featured e-commerce application built with Next.js 15, TypeScript, and PostgreSQL. Includes a complete admin panel, customer accounts, Stripe payments with automatic tax calculation, dedicated cart page, loyalty program, gift cards, abandoned cart recovery, a dedicated delivery driver system, Google OAuth for customers, product bundles, collapsible reviews, forgot password flow, and more — everything needed to launch a real online store with in-house or third-party delivery operations.
 
 ---
 
@@ -9,11 +9,13 @@ A production-ready, fully-featured e-commerce application built with Next.js 15,
 ### Storefront
 
 - Homepage with auto-playing promotional carousel and category showcase
-- Global navbar with horizontal scrolling category menu and integrated search — accessible from any page
+- Global navbar with horizontal scrolling category menu and integrated search — accessible from any page, mobile-responsive
 - Product catalog with category filtering, price range, and sorting
 - Amazon-style product detail page with vertical thumbnail strip, sticky buy box, and image gallery
 - Hover-to-preview thumbnails (desktop) and tap-to-preview (mobile)
 - Color variant image cards with per-variant pricing and sold-out overlays
+- **Variant-accurate cart images** — selecting a color variant shows that variant's image in the cart, not the default product image
+- **Dedicated cart page** (`/cart`) — two-column desktop layout with item table and sticky order summary; fully responsive on mobile
 - **Frequently Bought Together** — admin-curated product bundles with add-all-to-cart and per-item toggle
 - **Collapsible product reviews** — star ratings, verified purchase badges, and review form in a toggleable section
 - Product comparison (up to 3 side-by-side) with floating compare drawer and dedicated compare page
@@ -22,14 +24,14 @@ A production-ready, fully-featured e-commerce application built with Next.js 15,
 - Full-text search with pagination
 - Social share buttons (Facebook, X, WhatsApp, Pinterest, Copy Link)
 - Stock badges — "Only X left" urgency labels
-- Mobile-responsive navigation with category sidebar
+- Mobile-responsive navigation with sliding category navbar and hamburger menu
 
 ### Product Variants & Bundles
 
 - Every product supports color, size, and brand attributes
 - Per-variant stock tracking, price overrides, and individual variant images
 - Admin UI for creating and managing variants (color, size, SKU, stock, price, image)
-- **Per-variant image upload** — each color variant can have its own image; selecting a color updates the main product image
+- **Per-variant image upload** — each color variant can have its own image; selecting a color updates the main product image and the cart thumbnail
 - **Product Bundle Manager** — admin search-and-add UI on the product edit page to curate Frequently Bought Together lists (up to 4 products per bundle)
 - Customer-facing variant picker with out-of-stock dimming and smart color+size combo selection
 - Cart, checkout, webhooks, and abandoned cart emails are all variant-aware
@@ -47,6 +49,8 @@ A production-ready, fully-featured e-commerce application built with Next.js 15,
 ### Checkout & Payments
 
 - Stripe Checkout integration with webhooks
+- **Automatic tax calculation** via Stripe Tax — tax is calculated based on the customer's shipping address on the Stripe-hosted checkout page
+- **Shipping options** — Standard (free, 5–7 business days) and Express ($9.99, 1–3 business days) — customer selects on Stripe checkout page
 - Discount codes (percentage or fixed amount, expiry dates, usage limits)
 - Gift cards (fixed or custom amount, 2-year expiry, email delivery, balance checker)
 - Discount codes and gift cards combine correctly in a single Stripe coupon
@@ -104,7 +108,7 @@ A production-ready, fully-featured e-commerce application built with Next.js 15,
 | ORM                   | Prisma 7 + PrismaPg adapter                         |
 | Auth (Admin & Driver) | NextAuth.js (shared `User` model, role-based)       |
 | Auth (Customer)       | Custom session-based auth + Google OAuth            |
-| Payments              | Stripe Checkout + Webhooks                          |
+| Payments              | Stripe Checkout + Webhooks + Stripe Tax             |
 | Styling               | Tailwind CSS + shadcn/ui                            |
 | Images                | Cloudinary                                          |
 | Email                 | Resend                                              |
@@ -124,7 +128,7 @@ A production-ready, fully-featured e-commerce application built with Next.js 15,
 | **Driver**   | `/driver/login`  | Only their assigned deliveries; can update delivery status    |
 | **Customer** | `/account/login` | Their own orders, addresses, wishlist, loyalty points         |
 
-Admins and drivers share the same underlying `User` table (distinguished by a `role` field), while customers use a separate `Customer` table with its own session system. Route access for `/admin/*` and `/driver/*` is enforced in `middleware.ts` at the edge — admins may also access `/driver/*` for oversight, but drivers can never access `/admin/*`.
+Admins and drivers share the same underlying `User` table (distinguished by a `role` field), while customers use a separate `Customer` table with its own session system. Route access for `/admin/*` and `/driver/*` is enforced in `middleware.ts` at the edge.
 
 ---
 
@@ -148,13 +152,11 @@ npm install
 
 ### 2. Configure environment variables
 
-Copy `.env.example` to `.env` and fill in each value:
-
 ```bash
 cp .env.example .env
 ```
 
-See [Environment Variables](#-environment-variables) below for where to get each key.
+Fill in each value — see [Environment Variables](#-environment-variables) below.
 
 ### 3. Set up the database
 
@@ -171,8 +173,6 @@ npx tsx prisma/products-seed.ts
 npx tsx prisma/new-category-products-seed.ts
 ```
 
-This populates demo products across multiple categories with real Cloudinary-hosted images.
-
 ### 5. Create the first admin account
 
 ```bash
@@ -183,8 +183,6 @@ npx cross-env \
   npx tsx prisma/seed-admin.ts
 ```
 
-Once logged in, additional admin accounts can be created the same way, and **driver accounts can be created directly from the admin panel** at `/admin/drivers`.
-
 ### 6. Set up Google OAuth (for customer sign-in)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials
@@ -194,17 +192,27 @@ Once logged in, additional admin accounts can be created the same way, and **dri
    - `https://yourdomain.com/api/auth/google/callback` (production)
 4. Copy the Client ID and Client Secret into your `.env`
 
-### 7. Run the development server
+### 7. Activate Stripe Tax
+
+Stripe Tax automatically calculates tax based on the customer's shipping address. No extra environment variables are required — it is already enabled in `app/actions/checkout.ts`.
+
+1. Go to [Stripe Dashboard](https://dashboard.stripe.com) → **Settings → Tax**
+2. Click **Activate Stripe Tax** and enter your business address
+3. Click **Add registration** and add at least one country/state where you collect tax
+4. In sandbox/test mode you can use a placeholder registration number (e.g. `TEST-123`)
+
+### 8. Run the development server
 
 ```bash
 npm run dev
 ```
 
 - Storefront: `http://localhost:3000`
+- Cart page: `http://localhost:3000/cart`
 - Admin panel: `http://localhost:3000/admin/login`
 - Driver portal: `http://localhost:3000/driver/login`
 
-### 8. Set up Stripe webhooks (local testing)
+### 9. Set up Stripe webhooks (local testing)
 
 ```bash
 stripe listen --forward-to localhost:3000/api/webhooks/stripe
@@ -239,6 +247,7 @@ Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET` in `.env`.
 | `UPSTASH_REDIS_REST_TOKEN`           | Upstash Dashboard → Redis database → REST API                          |
 | `CRON_SECRET`                        | Generate with `openssl rand -hex 32` (secures the abandoned-cart cron) |
 | `EMAIL_TEST_ADDRESS`                 | Your email address — reset emails are sent here in development         |
+| `LOW_STOCK_THRESHOLD`                | Integer — variants at or below this stock level trigger a stock alert  |
 
 ---
 
@@ -255,8 +264,9 @@ Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET` in `.env`.
 6. Configure your Stripe webhook endpoint: `https://yourdomain.com/api/webhooks/stripe`
 7. Add your production URL to Google Cloud Console → Authorized redirect URIs: `https://yourdomain.com/api/auth/google/callback`
 8. Verify your sending domain in [Resend](https://resend.com/domains) and update `RESEND_FROM_EMAIL`
-9. Vercel Cron (configured in `vercel.json`) will automatically run the abandoned-cart email job hourly — no extra setup needed
-10. Create your first production admin via the seed script, then create driver accounts from the admin panel
+9. Activate Stripe Tax in your live-mode Stripe dashboard (separate from test mode) and add real tax registrations
+10. Vercel Cron (configured in `vercel.json`) will automatically run the abandoned-cart email job hourly
+11. Create your first production admin via the seed script, then create driver accounts from the admin panel
 
 ---
 
@@ -265,7 +275,9 @@ Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET` in `.env`.
 ```
 app/
 ├── (store)/                  # Public storefront routes
+│   ├── cart/                 # Dedicated cart page (/cart) — two-column layout
 │   ├── account/              # Customer account, login, register, forgot/reset password
+│   ├── checkout/             # Checkout page with discount, gift card, loyalty redemption
 │   ├── compare/              # Product comparison page
 │   └── products/[slug]/      # Product detail page
 ├── admin/                    # Admin panel (protected — role: ADMIN only)
@@ -273,7 +285,7 @@ app/
 │   └── orders/[id]/          # Order detail, shipping/carrier/driver assignment
 ├── driver/                   # Driver portal (protected — role: DRIVER or ADMIN)
 │   └── login/
-├── actions/                  # Server actions (auth, cart, products, reviews, bundles, password reset)
+├── actions/                  # Server actions (auth, cart, checkout, products, reviews)
 ├── api/
 │   ├── auth/google/          # Google OAuth routes (redirect + callback)
 │   ├── webhooks/stripe/      # Stripe webhook handler
@@ -282,13 +294,13 @@ app/
 ├── not-found.tsx             # 404 page
 └── global-error.tsx          # Root-level error boundary
 
-middleware.ts                 # Edge-level role-based route protection for /admin and /driver
+middleware.ts                 # Edge-level role-based route protection
 
 lib/
 ├── prisma.ts                 # Prisma client singleton with PrismaPg adapter
 ├── auth.ts                   # NextAuth configuration (admin + driver roles)
 ├── customer-auth.ts          # Customer session logic
-├── cart-store.ts             # Zustand cart store (variant-aware)
+├── cart-store.ts             # Zustand cart store (variant-aware, variant image-aware)
 ├── compare-store.ts          # Zustand compare store (up to 3 products)
 ├── recently-viewed-store.ts  # Zustand recently viewed store (persisted)
 ├── ratelimit.ts              # Upstash rate limiters
@@ -296,25 +308,15 @@ lib/
 
 components/
 ├── admin/
-│   ├── BundleManager.tsx     # Search and manage Frequently Bought Together products
-│   ├── VariantForm.tsx       # Variant create/edit with per-variant image upload
-│   ├── VariantsClient.tsx    # Variant table with image column
-│   └── ...                   # Other admin components
-├── driver/                   # Driver portal components
+│   ├── BundleManager.tsx         # Frequently Bought Together product search
+│   ├── VariantForm.tsx           # Variant create/edit with per-variant image upload
+│   └── ...
 └── store/
-    ├── ProductDetail.tsx         # Product detail with variant picker, gallery, bundles
-    ├── ProductReviews.tsx        # Collapsible reviews section with write-a-review form
-    ├── FrequentlyBoughtTogether.tsx  # Bundle UI with per-item toggle and add-all-to-cart
-    ├── ReviewForm.tsx            # Customer review submission form
-    ├── RelatedProducts.tsx       # Same-category product suggestions
-    ├── RecentlyViewed.tsx        # Recently viewed products from Zustand store
-    ├── LoginForm.tsx             # Customer login with Google sign-in + forgot password link
-    └── ...                       # Other store components
-
-prisma/
-├── schema.prisma             # Full database schema including ProductBundle, PasswordResetToken
-├── migrations/               # All database migrations
-└── *-seed.ts                 # Demo data and admin seed scripts
+    ├── CartDrawer.tsx            # Slide-out cart drawer with View Cart link
+    ├── ProductDetail.tsx         # Variant picker — passes variant image to cart
+    ├── ProductReviews.tsx        # Collapsible reviews section
+    ├── FrequentlyBoughtTogether.tsx
+    └── ...
 ```
 
 ---
@@ -340,17 +342,18 @@ prisma/
 ## ⚠️ Known Limitations
 
 - **Neon free tier sleeps after inactivity** — the first request after idle time may take 10–45 seconds. Upgrade to a paid Neon plan to eliminate this.
-- **Abandoned cart emails apply to logged-in customers only** — guest checkouts aren't tracked (no persistent identity to attach a cart to).
-- **Driver deletion unassigns rather than deletes orders** — removing a driver account sets their assigned orders back to unassigned; an admin will need to manually reassign them.
-- **Google OAuth customers have no password** — if a customer signs up via Google and later tries to log in with email/password, they won't have a password set. The forgot password flow will not work for OAuth-only accounts.
-- **Resend free tier** — in development, emails can only be sent to the address registered on your Resend account. Verify a domain for production to send to any address.
-- **Crisp, Brevo, and Upstash all use free tiers** — sufficient for a small-to-medium store; upgrade as you scale.
+- **Abandoned cart emails apply to logged-in customers only** — guest checkouts aren't tracked.
+- **Driver deletion unassigns rather than deletes orders** — removing a driver sets their assigned orders back to unassigned.
+- **Google OAuth customers have no password** — the forgot password flow will not work for OAuth-only accounts.
+- **Resend free tier** — in development, emails can only be sent to the address registered on your Resend account. Verify a domain for production.
+- **Stripe Tax requires activation per environment** — test mode and live mode have separate Tax settings in the Stripe dashboard.
+- **Admin panel is desktop-only** — the admin panel is not optimised for mobile screens, which is standard for e-commerce admin interfaces.
 
 ---
 
 ## 🗺️ Possible Future Enhancements
 
-- Driver mobile app or PWA support for on-the-go status updates
+- Driver mobile app or PWA for on-the-go status updates
 - Real-time delivery tracking map for customers
 - Subscription / recurring orders
 - Multi-vendor marketplace support
