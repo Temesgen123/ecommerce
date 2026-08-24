@@ -12,12 +12,12 @@ export const dynamic = 'force-dynamic';
 const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
 export const metadata: Metadata = {
-  title: 'MyStore — Quality Products, Simply Delivered',
+  title: 'NextShop — Quality Products, Simply Delivered',
   description:
     'Shop thousands of products across electronics, apparel, home goods, and more. Free shipping on orders over $50.',
   openGraph: {
     type: 'website',
-    title: 'MyStore — Quality Products, Simply Delivered',
+    title: 'NextShop — Quality Products, Simply Delivered',
     description:
       'Shop thousands of products across electronics, apparel, home goods, and more.',
     url: baseUrl,
