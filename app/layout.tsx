@@ -36,12 +36,12 @@ export const metadata: Metadata = {
     'free shipping',
     'best prices',
   ],
-  authors: [{ name: 'MyStore' }],
-  creator: 'MyStore',
+  authors: [{ name: 'NextShop' }],
+  creator: 'NextShop',
   openGraph: {
     type: 'website',
-    siteName: 'MyStore',
-    title: 'MyStore — Quality Products, Simply Delivered',
+    siteName: 'NextShop',
+    title: 'NextShop — Quality Products, Simply Delivered',
     description:
       'Shop thousands of products across electronics, apparel, home goods, and more.',
     url: baseUrl,
@@ -50,13 +50,13 @@ export const metadata: Metadata = {
         url: '/og-default.png',
         width: 1200,
         height: 630,
-        alt: 'MyStore',
+        alt: 'NextShop',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MyStore — Quality Products, Simply Delivered',
+    title: 'NextShop — Quality Products, Simply Delivered',
     description:
       'Shop thousands of products across electronics, apparel, home goods, and more.',
     images: ['/og-default.png'],
