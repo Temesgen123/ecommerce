@@ -22,8 +22,8 @@ const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    template: '%s | MyStore',
-    default: 'MyStore — Quality Products, Simply Delivered',
+    template: '%s | NextShop',
+    default: 'NextShop — Quality Products, Simply Delivered',
   },
   description:
     'Shop thousands of products across electronics, apparel, home goods, and more. Free shipping on orders over $50. Fast delivery, easy returns.',
