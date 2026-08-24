@@ -152,11 +152,8 @@ export async function createCheckoutSession({
         items.map((i) => ({
           id: i.id,
           variantId: i.variantId,
-          variantLabel: i.variantLabel ?? null,
           quantity: i.quantity,
           price: i.price,
-          name: i.name,
-          slug: i.slug,
         })),
       ),
       discountCode: discountCode ?? '',

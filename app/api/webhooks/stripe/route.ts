@@ -70,15 +70,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // Parse cart metadata — now includes variantId and variantLabel
+  // Parse cart metadata — now only contains id, variantId, quantity, price
+  // (name/slug/variantLabel removed to stay within Stripe's 500-char limit)
   type CartMeta = {
-    id: string;
+    id: string; // productId
     variantId: string;
-    variantLabel: string | null;
     quantity: number;
-    price: number;
-    name: string;
-    slug: string;
+    price: number; // cents
   };
 
   let cartItems: CartMeta[] = [];
@@ -98,8 +96,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Empty cart' }, { status: 400 });
   }
 
+  // Look up product and variant details from DB
+  // This replaces name/slug/variantLabel that were previously in metadata
+  const enrichedItems = await Promise.all(
+    cartItems.map(async (item) => {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: item.variantId },
+        select: {
+          color: true,
+          size: true,
+          product: { select: { name: true, slug: true } },
+        },
+      });
+
+      const name = variant?.product.name ?? 'Unknown Product';
+      const slug = variant?.product.slug ?? '';
+      const variantLabel =
+        variant?.color && variant?.size
+          ? `${variant.color} / ${variant.size}`
+          : (variant?.color ?? variant?.size ?? null);
+
+      return { ...item, name, slug, variantLabel };
+    }),
+  );
+
   // Use Stripe's actual charged amounts
-  const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = enrichedItems.reduce(
+    (sum, i) => sum + i.price * i.quantity,
+    0,
+  );
   const shippingCost = (session as any).shipping_cost?.amount_total ?? 0;
   const tax = session.total_details?.amount_tax ?? 0;
   const discountAmount = session.total_details?.amount_discount ?? 0;
@@ -108,7 +133,7 @@ export async function POST(req: NextRequest) {
 
   const discountCode = session.metadata?.discountCode ?? null;
 
-  // Extract shipping address — check both old and new Stripe API field paths
+  // Extract shipping address
   const addr =
     (session as any).collected_information?.shipping_details?.address ??
     (session as any).shipping_details?.address;
@@ -148,14 +173,13 @@ export async function POST(req: NextRequest) {
         discountCode: discountCode,
         total,
         items: {
-          create: cartItems.map((item) => ({
+          create: enrichedItems.map((item) => ({
             quantity: item.quantity,
             unitPrice: item.price,
             total: item.price * item.quantity,
             productId: item.id,
             productName: item.name,
             productSlug: item.slug,
-            // Variant fields — null for products without color/size options
             variantId: item.variantId ?? null,
             variantLabel: item.variantLabel ?? null,
           })),
@@ -190,11 +214,9 @@ export async function POST(req: NextRequest) {
       data: { orderId: order.id, status: 'PAID' },
     });
 
-    // ── Decrement variant stock (not product.stock) ──────────
-    // Stock now lives on ProductVariant, not Product.
-    // Each cart item references a specific variantId.
+    // Decrement variant stock
     const updatedVariants = await Promise.all(
-      cartItems.map((item) =>
+      enrichedItems.map((item) =>
         prisma.productVariant.update({
           where: { id: item.variantId },
           data: { stock: { decrement: item.quantity } },
@@ -246,6 +268,7 @@ export async function POST(req: NextRequest) {
       );
       await sendLowStockAlert(alertProducts);
     }
+
     // Send order confirmation email
     await sendOrderConfirmationEmail({
       orderId: order.id,
