@@ -157,7 +157,7 @@ export default function Footer() {
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
         <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            © {new Date().getFullYear()} MyStore. All rights reserved.
+            © {new Date().getFullYear()} NextShop. All rights reserved.
           </p>
           <div className="flex gap-4">
             {[
