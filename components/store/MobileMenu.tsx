@@ -261,25 +261,25 @@ export default function MobileMenu({ customerName }: Props) {
               Sign Out
             </Link>
           ) : (
-            <div className="flex gap-2">
-              <Link
-                href="/account/login"
-                onClick={close}
-                className="flex-1 text-center rounded-lg py-2.5 text-sm font-semibold"
-                style={{
-                  border: '1px solid var(--navy-700)',
-                  color: 'var(--navy-300)',
-                }}
-              >
-                Sign In
-              </Link>
+            <div className="flex flex-col gap-2">
               <Link
                 href="/account/register"
                 onClick={close}
-                className="flex-1 text-center rounded-lg py-2.5 text-sm font-bold"
+                className="text-center rounded-lg text-xsm font-bold"
                 style={{ background: 'var(--accent)', color: '#fff' }}
               >
                 Register
+              </Link>
+              <Link
+                href="/account/login"
+                onClick={close}
+                className="text-center rounded-lg py-2.5 text-xsm font-semibold"
+                style={{
+                  border: '1px solid var(--navy-700)',
+                  color: 'var(--navy-100)',
+                }}
+              >
+                Sign In
               </Link>
             </div>
           )}
