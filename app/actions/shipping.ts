@@ -21,7 +21,7 @@ export type ShippingFormState = {
 
 const ShippingSchema = z
   .object({
-    carrier: z.enum(['FEDEX', 'UPS', 'MYSTORE_DELIVERY', 'OTHER']),
+    carrier: z.enum(['FEDEX', 'UPS', 'NEXTSHOP_DELIVERY', 'OTHER']),
     carrierCompanyName: sanitizedString({ min: 0, max: 100 }).optional(),
     trackingNumber: sanitizedString({ min: 0, max: 100 }).optional(),
     driverId: z.string().optional(),
@@ -34,7 +34,7 @@ const ShippingSchema = z
         path: ['carrierCompanyName'],
       });
     }
-    if (data.carrier === 'MYSTORE_DELIVERY' && !data.driverId) {
+    if (data.carrier === 'NEXTSHOP_DELIVERY' && !data.driverId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Select a driver for MyStore Delivery.',
@@ -81,8 +81,8 @@ export async function updateShipping(
       carrier,
       carrierCompanyName: carrier === 'OTHER' ? carrierCompanyName : null,
       trackingNumber:
-        carrier !== 'MYSTORE_DELIVERY' ? trackingNumber || null : null,
-      driverId: carrier === 'MYSTORE_DELIVERY' ? driverId : null,
+        carrier !== 'NEXTSHOP_DELIVERY' ? trackingNumber || null : null,
+      driverId: carrier === 'NEXTSHOP_DELIVERY' ? driverId : null,
     },
   });
 

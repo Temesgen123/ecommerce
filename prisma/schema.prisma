@@ -35,7 +35,7 @@ enum DiscountType {
 enum ShippingCarrier {
   FEDEX
   UPS
-  MYSTORE_DELIVERY
+  NEXTSHOP_DELIVERY
   OTHER
 }
 

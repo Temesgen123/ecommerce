@@ -24,7 +24,7 @@ interface Props {
 const CARRIER_OPTIONS = [
   { value: 'FEDEX', label: 'FedEx' },
   { value: 'UPS', label: 'UPS' },
-  { value: 'MYSTORE_DELIVERY', label: 'MyStore Delivery' },
+  { value: 'NEXTSHOP_DELIVERY', label: 'NextShop Delivery' },
   { value: 'OTHER', label: 'Other' },
 ];
 
@@ -52,7 +52,7 @@ export default function ShippingAssignment({
 
   const err = state.errors ?? {};
   const isOther = carrier === 'OTHER';
-  const isMyStoreDelivery = carrier === 'MYSTORE_DELIVERY';
+  const isMyStoreDelivery = carrier === 'NEXTSHOP_DELIVERY';
   const isExternalCarrier = carrier === 'FEDEX' || carrier === 'UPS' || isOther;
 
   return (
